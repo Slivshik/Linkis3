@@ -467,6 +467,412 @@ def remove_existing_api_key():
     result = remove_api_key(key_value)
     return jsonify(result)
 
+@app.route('/api/admin/stats', methods=['GET'])
+def get_admin_stats():
+    """Get system-wide statistics (admin only)"""
+    api_key = request.headers.get('X-API-Key')
+    if not api_key:
+        return jsonify({'error': 'API key required'}), 401
+    
+    user = get_user_by_api_key(api_key)
+    if not user or not user['is_admin']:
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    import sqlite3
+    conn = g.db
+    cursor = conn.cursor()
+    
+    # Total users
+    cursor.execute("SELECT COUNT(*) FROM users")
+    total_users = cursor.fetchone()[0]
+    
+    # Active users (last 24h)
+    cursor.execute("SELECT COUNT(DISTINCT user_id) FROM usage_logs WHERE timestamp > ?", (time.time() - 86400,))
+    active_users = cursor.fetchone()[0]
+    
+    # Total requests today
+    cursor.execute("SELECT SUM(requests_today) FROM users")
+    total_requests = cursor.fetchone()[0] or 0
+    
+    # Total tokens today
+    cursor.execute("SELECT SUM(tokens_today) FROM users")
+    total_tokens = cursor.fetchone()[0] or 0
+    
+    # API keys stats
+    cursor.execute("SELECT COUNT(*) FROM api_keys_pool WHERE is_active = 1")
+    active_keys = cursor.fetchone()[0]
+    
+    cursor.execute("SELECT SUM(usage_count) FROM api_keys_pool")
+    total_api_usage = cursor.fetchone()[0] or 0
+    
+    # Skills count
+    cursor.execute("SELECT COUNT(*) FROM skills")
+    total_skills = cursor.fetchone()[0]
+    
+    # Invites stats
+    cursor.execute("SELECT COUNT(*) FROM invites WHERE current_uses < max_uses AND expires_at > ?", (time.time(),))
+    active_invites = cursor.fetchone()[0]
+    
+    return jsonify({
+        'total_users': total_users,
+        'active_users_24h': active_users,
+        'total_requests_today': total_requests,
+        'total_tokens_today': total_tokens,
+        'active_api_keys': active_keys,
+        'total_api_usage': total_api_usage,
+        'total_skills': total_skills,
+        'active_invites': active_invites
+    })
+
+@app.route('/api/admin/users', methods=['GET'])
+def list_all_users():
+    """List all users with their stats (admin only)"""
+    api_key = request.headers.get('X-API-Key')
+    if not api_key:
+        return jsonify({'error': 'API key required'}), 401
+    
+    user = get_user_by_api_key(api_key)
+    if not user or not user['is_admin']:
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    import sqlite3
+    conn = g.db
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT id, username, email, is_admin, created_at, 
+               requests_today, tokens_today, daily_request_limit, daily_token_limit
+        FROM users
+        ORDER BY created_at DESC
+    """)
+    
+    users = []
+    for row in cursor.fetchall():
+        users.append({
+            'id': row[0],
+            'username': row[1],
+            'email': row[2],
+            'is_admin': bool(row[3]),
+            'created_at': row[4],
+            'requests_today': row[5],
+            'tokens_today': row[6],
+            'daily_request_limit': row[7],
+            'daily_token_limit': row[8]
+        })
+    
+    return jsonify(users)
+
+@app.route('/api/admin/users/<int:user_id>', methods=['PUT'])
+def update_user(user_id):
+    """Update user limits or role (admin only)"""
+    api_key = request.headers.get('X-API-Key')
+    if not api_key:
+        return jsonify({'error': 'API key required'}), 401
+    
+    user = get_user_by_api_key(api_key)
+    if not user or not user['is_admin']:
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    data = request.json
+    
+    import sqlite3
+    conn = g.db
+    cursor = conn.cursor()
+    
+    updates = []
+    values = []
+    
+    if 'is_admin' in data:
+        updates.append("is_admin = ?")
+        values.append(1 if data['is_admin'] else 0)
+    
+    if 'daily_request_limit' in data:
+        updates.append("daily_request_limit = ?")
+        values.append(data['daily_request_limit'])
+    
+    if 'daily_token_limit' in data:
+        updates.append("daily_token_limit = ?")
+        values.append(data['daily_token_limit'])
+    
+    if not updates:
+        return jsonify({'error': 'No valid fields to update'}), 400
+    
+    values.append(user_id)
+    query = f"UPDATE users SET {', '.join(updates)} WHERE id = ?"
+    
+    try:
+        cursor.execute(query, values)
+        conn.commit()
+        return jsonify({'message': 'User updated successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/users/<int:user_id>', methods=['DELETE'])
+def delete_user(user_id):
+    """Delete a user (admin only)"""
+    api_key = request.headers.get('X-API-Key')
+    if not api_key:
+        return jsonify({'error': 'API key required'}), 401
+    
+    user = get_user_by_api_key(api_key)
+    if not user or not user['is_admin']:
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    # Prevent deleting yourself
+    if user_id == user['id']:
+        return jsonify({'error': 'Cannot delete your own account'}), 400
+    
+    import sqlite3
+    conn = g.db
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        conn.commit()
+        return jsonify({'message': 'User deleted successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/logs', methods=['GET'])
+def get_system_logs():
+    """Get recent system logs (admin only)"""
+    api_key = request.headers.get('X-API-Key')
+    if not api_key:
+        return jsonify({'error': 'API key required'}), 401
+    
+    user = get_user_by_api_key(api_key)
+    if not user or not user['is_admin']:
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    limit = request.args.get('limit', 100, type=int)
+    
+    import sqlite3
+    conn = g.db
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT ul.*, u.username
+        FROM usage_logs ul
+        JOIN users u ON ul.user_id = u.id
+        ORDER BY ul.timestamp DESC
+        LIMIT ?
+    """, (limit,))
+    
+    logs = []
+    for row in cursor.fetchall():
+        logs.append({
+            'id': row[0],
+            'user_id': row[1],
+            'username': row[8],
+            'api_key_used': row[2][:10] + '...' if row[2] else None,
+            'model': row[3],
+            'tokens_used': row[4],
+            'success': bool(row[5]),
+            'error_message': row[6],
+            'timestamp': row[7]
+        })
+    
+    return jsonify(logs)
+
+# User Endpoints
+@app.route('/api/user/stats', methods=['GET'])
+def get_my_stats():
+    """Get current user's detailed statistics"""
+    api_key = request.headers.get('X-API-Key')
+    if not api_key:
+        return jsonify({'error': 'API key required'}), 401
+    
+    user = get_user_by_api_key(api_key)
+    if not user:
+        return jsonify({'error': 'Invalid API key'}), 401
+    
+    import sqlite3
+    conn = g.db
+    cursor = conn.cursor()
+    
+    # Get detailed usage history (last 7 days)
+    cursor.execute("""
+        SELECT DATE(timestamp, 'unixepoch') as day, 
+               COUNT(*) as requests, 
+               SUM(tokens_used) as tokens
+        FROM usage_logs
+        WHERE user_id = ? AND timestamp > ?
+        GROUP BY day
+        ORDER BY day DESC
+    """, (user['id'], time.time() - 7 * 86400))
+    
+    daily_usage = []
+    for row in cursor.fetchall():
+        daily_usage.append({
+            'date': row[0],
+            'requests': row[1],
+            'tokens': row[2] or 0
+        })
+    
+    # Get skills created by user
+    cursor.execute("""
+        SELECT id, name, category, is_public, usage_count, created_at
+        FROM skills
+        WHERE creator_id = ?
+        ORDER BY created_at DESC
+    """, (user['id'],))
+    
+    my_skills = []
+    for row in cursor.fetchall():
+        my_skills.append({
+            'id': row[0],
+            'name': row[1],
+            'category': row[2],
+            'is_public': bool(row[3]),
+            'usage_count': row[4],
+            'created_at': row[5]
+        })
+    
+    # Get invites created by user
+    cursor.execute("""
+        SELECT invite_code, max_uses, current_uses, expires_at, created_at
+        FROM invites
+        WHERE created_by = ?
+        ORDER BY created_at DESC
+    """, (user['id'],))
+    
+    my_invites = []
+    for row in cursor.fetchall():
+        my_invites.append({
+            'invite_code': row[0],
+            'max_uses': row[1],
+            'current_uses': row[2],
+            'expires_at': row[3],
+            'created_at': row[4],
+            'is_active': row[2] < row[1] and row[3] > time.time()
+        })
+    
+    stats = get_user_stats(user['id'])
+    
+    return jsonify({
+        'user': {
+            'id': user['id'],
+            'username': user['username'],
+            'email': user['email'],
+            'is_admin': bool(user['is_admin']),
+            'created_at': user['created_at']
+        },
+        'limits': {
+            'daily_requests': stats['daily_request_limit'],
+            'daily_tokens': stats['daily_token_limit'],
+            'requests_used': stats['requests_today'],
+            'tokens_used': stats['tokens_today'],
+            'requests_remaining': stats['daily_request_limit'] - stats['requests_today'],
+            'tokens_remaining': stats['daily_token_limit'] - stats['tokens_today']
+        },
+        'daily_usage': daily_usage,
+        'my_skills': my_skills,
+        'my_invites': my_invites
+    })
+
+@app.route('/api/user/change-password', methods=['POST'])
+def change_password():
+    """Change user password"""
+    api_key = request.headers.get('X-API-Key')
+    if not api_key:
+        return jsonify({'error': 'API key required'}), 401
+    
+    user = get_user_by_api_key(api_key)
+    if not user:
+        return jsonify({'error': 'Invalid API key'}), 401
+    
+    data = request.json
+    old_password = data.get('old_password')
+    new_password = data.get('new_password')
+    
+    if not old_password or not new_password:
+        return jsonify({'error': 'Both old and new password required'}), 400
+    
+    import bcrypt
+    if not bcrypt.checkpw(old_password.encode(), user['password_hash'].encode()):
+        return jsonify({'error': 'Incorrect password'}), 401
+    
+    if len(new_password) < 6:
+        return jsonify({'error': 'Password must be at least 6 characters'}), 400
+    
+    import sqlite3
+    conn = g.db
+    cursor = conn.cursor()
+    
+    new_hash = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
+    cursor.execute("UPDATE users SET password_hash = ? WHERE id = ?", (new_hash, user['id']))
+    conn.commit()
+    
+    return jsonify({'message': 'Password changed successfully'})
+
+@app.route('/api/user/regenerate-key', methods=['POST'])
+def regenerate_api_key():
+    """Regenerate user's API key"""
+    api_key = request.headers.get('X-API-Key')
+    if not api_key:
+        return jsonify({'error': 'API key required'}), 401
+    
+    user = get_user_by_api_key(api_key)
+    if not user:
+        return jsonify({'error': 'Invalid API key'}), 401
+    
+    import secrets
+    import sqlite3
+    conn = g.db
+    cursor = conn.cursor()
+    
+    new_key = f"user_{secrets.token_urlsafe(32)}"
+    cursor.execute("UPDATE users SET api_key = ? WHERE id = ?", (new_key, user['id']))
+    conn.commit()
+    
+    return jsonify({'api_key': new_key, 'message': 'API key regenerated. Update your applications!'})
+
+@app.route('/api/user/sessions', methods=['GET'])
+def get_user_sessions():
+    """Get user's active chat sessions"""
+    api_key = request.headers.get('X-API-Key')
+    if not api_key:
+        return jsonify({'error': 'API key required'}), 401
+    
+    user = get_user_by_api_key(api_key)
+    if not user:
+        return jsonify({'error': 'Invalid API key'}), 401
+    
+    global active_agents
+    user_id = str(user['id'])
+    
+    if user_id in active_agents:
+        agent_instance = active_agents[user_id]
+        history = agent_instance.get_history()
+        # Filter out system message for display
+        messages = [m for m in history if m['role'] != 'system']
+        return jsonify({
+            'active': True,
+            'message_count': len(messages),
+            'recent_messages': messages[-10:]  # Last 10 messages
+        })
+    else:
+        return jsonify({'active': False, 'message_count': 0, 'recent_messages': []})
+
+@app.route('/api/user/clear-session', methods=['POST'])
+def clear_user_session():
+    """Clear user's chat session"""
+    api_key = request.headers.get('X-API-Key')
+    if not api_key:
+        return jsonify({'error': 'API key required'}), 401
+    
+    user = get_user_by_api_key(api_key)
+    if not user:
+        return jsonify({'error': 'Invalid API key'}), 401
+    
+    global active_agents
+    user_id = str(user['id'])
+    
+    if user_id in active_agents:
+        active_agents[user_id].clear_history()
+    
+    return jsonify({'message': 'Session cleared'})
+
 # Download endpoint
 @app.route('/api/download', methods=['POST'])
 def download_files():

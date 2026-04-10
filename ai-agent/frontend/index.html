@@ -4,1054 +4,1462 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Agent - Web Interface</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: #1a1a2e;
-            color: #eee;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .header {
-            background: #16213e;
-            padding: 15px 20px;
-            border-bottom: 1px solid #0f3460;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .header h1 {
-            font-size: 1.5rem;
-            color: #e94560;
-        }
-
-        .settings {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .settings input, .settings select {
-            padding: 8px 12px;
-            border: 1px solid #0f3460;
-            border-radius: 5px;
-            background: #1a1a2e;
-            color: #eee;
-            font-size: 14px;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 12px;
-            background: #0f3460;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-
-        .main-container {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-        }
-
-        .chat-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            max-width: 70%;
-        }
-
-        .messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .message {
-            max-width: 85%;
-            padding: 12px 16px;
-            border-radius: 10px;
-            line-height: 1.5;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-
-        .message.user {
-            align-self: flex-end;
-            background: #e94560;
-            color: white;
-        }
-
-        .message.assistant {
-            align-self: flex-start;
-            background: #16213e;
-            border-left: 3px solid #e94560;
-        }
-
-        .message.system {
-            align-self: center;
-            background: #0f3460;
-            font-size: 0.9em;
-            color: #aaa;
-        }
-
-        .input-area {
-            padding: 20px;
-            background: #16213e;
-            border-top: 1px solid #0f3460;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .input-area textarea {
-            flex: 1;
-            min-width: 200px;
-            padding: 12px;
-            border: 1px solid #0f3460;
-            border-radius: 8px;
-            background: #1a1a2e;
-            color: #eee;
-            font-size: 14px;
-            resize: none;
-            min-height: 60px;
-        }
-
-        .input-area button {
-            padding: 12px 24px;
-            background: #e94560;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background 0.3s;
-        }
-
-        .input-area button:hover {
-            background: #ff6b6b;
-        }
-
-        .input-area button:disabled {
-            background: #666;
-            cursor: not-allowed;
-        }
-
-        .sidebar {
-            width: 30%;
-            background: #16213e;
-            border-left: 1px solid #0f3460;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .sidebar-tabs {
-            display: flex;
-            border-bottom: 1px solid #0f3460;
-        }
-
-        .tab {
-            flex: 1;
-            padding: 12px;
-            text-align: center;
-            cursor: pointer;
-            background: #16213e;
-            border: none;
-            color: #aaa;
-            transition: all 0.3s;
-        }
-
-        .tab.active {
-            background: #0f3460;
-            color: #e94560;
-        }
-
-        .tab:hover {
-            background: #0f3460;
-        }
-
-        .tab-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 10px;
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .file-item {
-            padding: 8px 12px;
-            cursor: pointer;
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .file-item:hover {
-            background: #0f3460;
-        }
-
-        .file-item.directory {
-            color: #ffd700;
-        }
-
-        .file-item.file {
-            color: #aaa;
-        }
-
-        .skill-item {
-            padding: 10px;
-            margin: 5px 0;
-            background: #0f3460;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .skill-item:hover {
-            background: #1a3a5c;
-        }
-
-        .skill-name {
-            font-weight: bold;
-            color: #e94560;
-        }
-
-        .skill-description {
-            font-size: 0.85em;
-            color: #aaa;
-            margin-top: 5px;
-        }
-
-        .invite-item {
-            padding: 10px;
-            margin: 5px 0;
-            background: #0f3460;
-            border-radius: 5px;
-            word-break: break-all;
-        }
-
-        .invite-code {
-            font-family: monospace;
-            background: #1a1a2e;
-            padding: 5px;
-            border-radius: 3px;
-            color: #e94560;
-        }
-
-        .terminal {
-            height: 200px;
-            background: #0d0d0d;
-            border-top: 1px solid #0f3460;
-            padding: 10px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            overflow-y: auto;
-        }
-
-        .terminal-line {
-            margin: 2px 0;
-            color: #0f0;
-        }
-
-        .terminal-error {
-            color: #f44;
-        }
-
-        .options {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-left: 10px;
-        }
-
-        .options label {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 14px;
-            cursor: pointer;
-        }
-
-        .typing-indicator {
-            display: inline-block;
-        }
-
-        .typing-indicator span {
-            animation: blink 1.4s infinite;
-            opacity: 0;
-        }
-
-        .typing-indicator span:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-
-        .typing-indicator span:nth-child(3) {
-            animation-delay: 0.4s;
-        }
-
-        @keyframes blink {
-            0% { opacity: 0; }
-            50% { opacity: 1; }
-            100% { opacity: 0; }
-        }
-
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #1a1a2e;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #0f3460;
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #e94560;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.7);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: #16213e;
-            padding: 30px;
-            border-radius: 10px;
-            max-width: 500px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            color: #aaa;
-            font-size: 24px;
-            cursor: pointer;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #aaa;
-        }
-
-        .form-group input, .form-group textarea, .form-group select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #0f3460;
-            border-radius: 5px;
-            background: #1a1a2e;
-            color: #eee;
-            font-size: 14px;
-        }
-
-        .btn-primary {
-            background: #e94560;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .btn-primary:hover {
-            background: #ff6b6b;
-        }
-
-        .btn-secondary {
-            background: #0f3460;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .btn-secondary:hover {
-            background: #1a3a5c;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .stat-card {
-            background: #0f3460;
-            padding: 15px;
-            border-radius: 5px;
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #e94560;
-        }
-
-        .stat-label {
-            font-size: 0.85em;
-            color: #aaa;
-        }
-
-        .download-btn {
-            background: #28a745;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 10px;
-        }
-
-        .download-btn:hover {
-            background: #34ce57;
-        }
+    :root {
+        --bg: #08080c;
+        --bg-elevated: #0f0f14;
+        --bg-card: #141419;
+        --bg-card-hover: #1a1a22;
+        --fg: #e8e6e1;
+        --fg-muted: #7a7872;
+        --fg-dim: #4a4945;
+        --accent: #ff6b4a;
+        --accent-glow: rgba(255, 107, 74, 0.15);
+        --accent-soft: #ff8a70;
+        --accent-secondary: #fbbf24;
+        --border: rgba(255, 255, 255, 0.06);
+        --border-hover: rgba(255, 255, 255, 0.12);
+        --glass: rgba(20, 20, 25, 0.7);
+        --glass-border: rgba(255, 255, 255, 0.08);
+        --success: #34d399;
+        --error: #f87171;
+        --radius-sm: 6px;
+        --radius-md: 10px;
+        --radius-lg: 16px;
+        --radius-xl: 20px;
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+        --shadow-md: 0 4px 20px rgba(0,0,0,0.5);
+        --shadow-lg: 0 8px 40px rgba(0,0,0,0.6);
+        --shadow-glow: 0 0 40px rgba(255,107,74,0.1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+        font-family: 'DM Sans', sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        position: relative;
+    }
+
+    /* Animated background */
+    .bg-layer {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        overflow: hidden;
+        pointer-events: none;
+    }
+    .bg-blob {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(120px);
+        opacity: 0.4;
+        animation: blobFloat 20s ease-in-out infinite;
+    }
+    .bg-blob:nth-child(1) {
+        width: 500px; height: 500px;
+        background: radial-gradient(circle, rgba(255,107,74,0.15), transparent 70%);
+        top: -10%; left: -5%;
+        animation-delay: 0s;
+    }
+    .bg-blob:nth-child(2) {
+        width: 400px; height: 400px;
+        background: radial-gradient(circle, rgba(251,191,36,0.08), transparent 70%);
+        bottom: -10%; right: -5%;
+        animation-delay: -7s;
+        animation-duration: 25s;
+    }
+    .bg-blob:nth-child(3) {
+        width: 300px; height: 300px;
+        background: radial-gradient(circle, rgba(255,107,74,0.06), transparent 70%);
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        animation-delay: -14s;
+        animation-duration: 30s;
+    }
+    @keyframes blobFloat {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        25% { transform: translate(30px, -40px) scale(1.05); }
+        50% { transform: translate(-20px, 20px) scale(0.95); }
+        75% { transform: translate(15px, 30px) scale(1.02); }
+    }
+
+    /* Noise overlay */
+    .bg-noise {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        opacity: 0.03;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        background-size: 256px 256px;
+    }
+
+    /* Grid pattern */
+    .bg-grid {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        opacity: 0.03;
+        background-image:
+            linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+        background-size: 60px 60px;
+    }
+
+    /* Everything above background */
+    .app-layer {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+    }
+
+    /* Header */
+    .header {
+        background: var(--glass);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--border);
+        padding: 12px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        flex-shrink: 0;
+    }
+    .header-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .brand-icon {
+        width: 36px; height: 36px;
+        border-radius: var(--radius-md);
+        background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        color: #fff;
+        box-shadow: 0 0 20px rgba(255,107,74,0.3);
+        animation: iconPulse 3s ease-in-out infinite;
+    }
+    @keyframes iconPulse {
+        0%, 100% { box-shadow: 0 0 20px rgba(255,107,74,0.3); }
+        50% { box-shadow: 0 0 30px rgba(255,107,74,0.5); }
+    }
+    .header h1 {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 1.25rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        background: linear-gradient(135deg, var(--fg) 0%, var(--fg-muted) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    .header-controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* Form controls */
+    .ctrl-select, .ctrl-input {
+        padding: 7px 12px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--bg-card);
+        color: var(--fg);
+        font-size: 13px;
+        font-family: 'DM Sans', sans-serif;
+        transition: all 0.2s;
+        outline: none;
+    }
+    .ctrl-select:hover, .ctrl-input:hover {
+        border-color: var(--border-hover);
+    }
+    .ctrl-select:focus, .ctrl-input:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    /* Toggle switch */
+    .toggle-wrap {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 13px;
+        color: var(--fg-muted);
+        cursor: pointer;
+        user-select: none;
+    }
+    .toggle-track {
+        width: 36px; height: 20px;
+        border-radius: 10px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        position: relative;
+        transition: all 0.3s;
+    }
+    .toggle-track::after {
+        content: '';
+        position: absolute;
+        top: 2px; left: 2px;
+        width: 14px; height: 14px;
+        border-radius: 50%;
+        background: var(--fg-muted);
+        transition: all 0.3s;
+    }
+    .toggle-wrap input { display: none; }
+    .toggle-wrap input:checked + .toggle-track {
+        background: var(--accent);
+        border-color: var(--accent);
+    }
+    .toggle-wrap input:checked + .toggle-track::after {
+        transform: translateX(16px);
+        background: #fff;
+    }
+
+    /* Buttons */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 16px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--bg-card);
+        color: var(--fg);
+        font-size: 13px;
+        font-family: 'DM Sans', sans-serif;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+    .btn:hover {
+        background: var(--bg-card-hover);
+        border-color: var(--border-hover);
+        transform: translateY(-1px);
+    }
+    .btn:active { transform: translateY(0); }
+    .btn-accent {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+        box-shadow: 0 2px 12px rgba(255,107,74,0.25);
+    }
+    .btn-accent:hover {
+        background: var(--accent-soft);
+        border-color: var(--accent-soft);
+        box-shadow: 0 4px 20px rgba(255,107,74,0.35);
+    }
+    .btn-accent:disabled {
+        background: var(--fg-dim);
+        border-color: var(--fg-dim);
+        box-shadow: none;
+        cursor: not-allowed;
+        transform: none;
+    }
+    .btn-success {
+        background: rgba(52,211,153,0.15);
+        border-color: rgba(52,211,153,0.3);
+        color: var(--success);
+    }
+    .btn-success:hover {
+        background: rgba(52,211,153,0.25);
+    }
+
+    .user-badge {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        background: var(--accent-glow);
+        border: 1px solid rgba(255,107,74,0.2);
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        color: var(--accent-soft);
+    }
+    .user-badge .avatar {
+        width: 22px; height: 22px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        color: #fff;
+        font-weight: 700;
+    }
+    .user-badge .logout-btn {
+        background: none;
+        border: none;
+        color: var(--fg-muted);
+        cursor: pointer;
+        padding: 2px;
+        font-size: 12px;
+        transition: color 0.2s;
+    }
+    .user-badge .logout-btn:hover { color: var(--error); }
+
+    /* Main layout */
+    .main-container {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+    }
+
+    /* Chat panel */
+    .chat-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+    .messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        scroll-behavior: smooth;
+    }
+
+    /* Welcome state */
+    .welcome-state {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        gap: 16px;
+        padding: 40px;
+        opacity: 0.6;
+        animation: fadeInUp 0.6s ease-out;
+    }
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 0.6; transform: translateY(0); }
+    }
+    .welcome-icon {
+        width: 64px; height: 64px;
+        border-radius: var(--radius-lg);
+        background: var(--accent-glow);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        color: var(--accent);
+    }
+    .welcome-state h2 {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--fg);
+    }
+    .welcome-state p {
+        color: var(--fg-muted);
+        font-size: 14px;
+        max-width: 380px;
+        line-height: 1.6;
+    }
+    .welcome-shortcuts {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-top: 8px;
+    }
+    .shortcut-chip {
+        padding: 6px 14px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        font-size: 12px;
+        color: var(--fg-muted);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .shortcut-chip:hover {
+        background: var(--bg-card-hover);
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    /* Messages */
+    .message {
+        max-width: 78%;
+        padding: 14px 18px;
+        border-radius: var(--radius-lg);
+        line-height: 1.65;
+        font-size: 14px;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        animation: msgIn 0.3s ease-out;
+        position: relative;
+    }
+    @keyframes msgIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .message.user {
+        align-self: flex-end;
+        background: linear-gradient(135deg, var(--accent), #e05535);
+        color: #fff;
+        border-bottom-right-radius: var(--radius-sm);
+        box-shadow: 0 4px 20px rgba(255,107,74,0.2);
+    }
+    .message.assistant {
+        align-self: flex-start;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-bottom-left-radius: var(--radius-sm);
+        color: var(--fg);
+    }
+    .message.system {
+        align-self: center;
+        background: transparent;
+        font-size: 12px;
+        color: var(--fg-dim);
+        padding: 8px 16px;
+        border: 1px dashed var(--border);
+        border-radius: 20px;
+        animation: msgIn 0.3s ease-out;
+    }
+
+    /* Typing indicator */
+    .typing-dots {
+        display: inline-flex;
+        gap: 4px;
+        padding: 4px 0;
+    }
+    .typing-dots span {
+        width: 6px; height: 6px;
+        border-radius: 50%;
+        background: var(--accent);
+        animation: dotBounce 1.4s ease-in-out infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: 0.16s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.32s; }
+    @keyframes dotBounce {
+        0%, 80%, 100% { opacity: 0.25; transform: scale(0.8); }
+        40% { opacity: 1; transform: scale(1.1); }
+    }
+
+    /* Download button in messages */
+    .download-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 10px;
+        padding: 8px 16px;
+        background: rgba(52,211,153,0.12);
+        border: 1px solid rgba(52,211,153,0.25);
+        border-radius: var(--radius-sm);
+        color: var(--success);
+        font-size: 13px;
+        font-family: 'DM Sans', sans-serif;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .download-btn:hover {
+        background: rgba(52,211,153,0.2);
+        transform: translateY(-1px);
+    }
+
+    /* Input area */
+    .input-area {
+        padding: 16px 24px 20px;
+        background: var(--glass);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-top: 1px solid var(--border);
+        display: flex;
+        gap: 10px;
+        align-items: flex-end;
+        flex-shrink: 0;
+    }
+    .input-wrap {
+        flex: 1;
+        position: relative;
+    }
+    .input-wrap textarea {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: var(--bg-card);
+        color: var(--fg);
+        font-size: 14px;
+        font-family: 'DM Sans', sans-serif;
+        resize: none;
+        min-height: 48px;
+        max-height: 160px;
+        line-height: 1.5;
+        outline: none;
+        transition: all 0.2s;
+    }
+    .input-wrap textarea::placeholder {
+        color: var(--fg-dim);
+    }
+    .input-wrap textarea:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    .input-hint {
+        position: absolute;
+        bottom: -18px;
+        right: 4px;
+        font-size: 11px;
+        color: var(--fg-dim);
+    }
+    .input-actions {
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+    }
+
+    /* Sidebar */
+    .sidebar {
+        width: 320px;
+        background: var(--glass);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-left: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+        transition: width 0.3s;
+    }
+
+    .sidebar-tabs {
+        display: flex;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+    }
+    .tab {
+        flex: 1;
+        padding: 11px 4px;
+        text-align: center;
+        cursor: pointer;
+        background: transparent;
+        border: none;
+        color: var(--fg-dim);
+        font-size: 12px;
+        font-family: 'DM Sans', sans-serif;
+        font-weight: 500;
+        transition: all 0.2s;
+        position: relative;
+    }
+    .tab i {
+        display: block;
+        font-size: 15px;
+        margin-bottom: 3px;
+    }
+    .tab::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 20%;
+        right: 20%;
+        height: 2px;
+        background: var(--accent);
+        border-radius: 1px;
+        transform: scaleX(0);
+        transition: transform 0.3s;
+    }
+    .tab.active {
+        color: var(--accent);
+    }
+    .tab.active::after {
+        transform: scaleX(1);
+    }
+    .tab:hover {
+        color: var(--fg-muted);
+    }
+
+    .tab-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 12px;
+        display: none;
+    }
+    .tab-content.active {
+        display: block;
+        animation: tabFade 0.25s ease-out;
+    }
+    @keyframes tabFade {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .tab-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        padding: 0 4px;
+    }
+    .tab-header h3 {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--fg-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    /* File explorer */
+    .file-item {
+        padding: 8px 10px;
+        cursor: pointer;
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        transition: all 0.15s;
+    }
+    .file-item:hover {
+        background: var(--bg-card-hover);
+    }
+    .file-item .file-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        flex-shrink: 0;
+    }
+    .file-item.directory .file-icon {
+        background: rgba(251,191,36,0.12);
+        color: var(--accent-secondary);
+    }
+    .file-item.file .file-icon {
+        background: rgba(255,255,255,0.05);
+        color: var(--fg-muted);
+    }
+    .file-item .file-name {
+        color: var(--fg);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .file-item.directory .file-name {
+        color: var(--fg);
+        font-weight: 500;
+    }
+
+    /* Skill items */
+    .skill-item {
+        padding: 12px;
+        margin-bottom: 6px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .skill-item:hover {
+        border-color: var(--accent);
+        box-shadow: var(--shadow-glow);
+        transform: translateY(-1px);
+    }
+    .skill-name {
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--accent);
+        margin-bottom: 4px;
+    }
+    .skill-description {
+        font-size: 12px;
+        color: var(--fg-muted);
+        line-height: 1.5;
+    }
+    .skill-meta {
+        display: flex;
+        gap: 12px;
+        margin-top: 8px;
+        font-size: 11px;
+        color: var(--fg-dim);
+    }
+    .skill-meta span {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    /* Invite items */
+    .invite-item {
+        padding: 12px;
+        margin-bottom: 6px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+    }
+    .invite-code {
+        font-family: 'Space Grotesk', monospace;
+        font-size: 14px;
+        font-weight: 600;
+        background: var(--bg);
+        padding: 6px 10px;
+        border-radius: var(--radius-sm);
+        color: var(--accent);
+        display: inline-block;
+        margin-bottom: 6px;
+        letter-spacing: 0.03em;
+    }
+    .invite-meta {
+        font-size: 11px;
+        color: var(--fg-dim);
+        display: flex;
+        gap: 12px;
+    }
+    .invite-meta span {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    /* Stats */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+    .stat-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        padding: 16px 12px;
+        border-radius: var(--radius-md);
+        text-align: center;
+        transition: all 0.2s;
+    }
+    .stat-card:hover {
+        border-color: var(--border-hover);
+    }
+    .stat-value {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: var(--accent);
+        line-height: 1.2;
+    }
+    .stat-label {
+        font-size: 11px;
+        color: var(--fg-dim);
+        margin-top: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    /* Terminal */
+    .terminal {
+        height: 170px;
+        background: #050508;
+        border-top: 1px solid var(--border);
+        padding: 10px 12px;
+        font-family: 'Space Grotesk', 'Courier New', monospace;
+        font-size: 11px;
+        overflow-y: auto;
+        flex-shrink: 0;
+        position: relative;
+    }
+    .terminal::before {
+        content: 'TERMINAL';
+        position: absolute;
+        top: 4px;
+        right: 8px;
+        font-size: 9px;
+        color: var(--fg-dim);
+        letter-spacing: 0.1em;
+        opacity: 0.5;
+    }
+    .terminal-line {
+        margin: 3px 0;
+        color: var(--success);
+        opacity: 0.8;
+    }
+    .terminal-line::before {
+        content: '$ ';
+        color: var(--fg-dim);
+    }
+    .terminal-error {
+        color: var(--error);
+        opacity: 0.8;
+    }
+    .terminal-error::before {
+        content: '! ';
+        color: var(--error);
+        opacity: 0.5;
+    }
+    .terminal-info {
+        color: var(--fg-muted);
+        opacity: 0.6;
+    }
+    .terminal-info::before {
+        content: '';
+    }
+
+    /* Modals */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+        animation: overlayIn 0.2s ease-out;
+    }
+    .modal-overlay.active {
+        display: flex;
+    }
+    @keyframes overlayIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    .modal {
+        background: var(--bg-elevated);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-xl);
+        padding: 28px;
+        max-width: 480px;
+        width: 90%;
+        max-height: 85vh;
+        overflow-y: auto;
+        box-shadow: var(--shadow-lg), var(--shadow-glow);
+        animation: modalIn 0.3s ease-out;
+    }
+    @keyframes modalIn {
+        from { opacity: 0; transform: translateY(20px) scale(0.97); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .modal-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+    }
+    .modal-head h2 {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+    .modal-close {
+        width: 32px; height: 32px;
+        border-radius: var(--radius-sm);
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        color: var(--fg-muted);
+        font-size: 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s;
+    }
+    .modal-close:hover {
+        background: var(--bg-card-hover);
+        color: var(--fg);
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--fg-muted);
+    }
+    .form-group .ctrl-input,
+    .form-group .ctrl-select,
+    .form-group textarea {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--bg-card);
+        color: var(--fg);
+        font-size: 14px;
+        font-family: 'DM Sans', sans-serif;
+        outline: none;
+        transition: all 0.2s;
+    }
+    .form-group textarea {
+        resize: vertical;
+        min-height: 60px;
+        line-height: 1.5;
+    }
+    .form-group .ctrl-input:focus,
+    .form-group .ctrl-select:focus,
+    .form-group textarea:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    .form-group .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        font-weight: 400;
+    }
+
+    .btn-full {
+        width: 100%;
+        justify-content: center;
+        padding: 11px 20px;
+    }
+
+    .divider {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 16px 0;
+        font-size: 12px;
+        color: var(--fg-dim);
+    }
+    .divider::before, .divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+    }
+
+    .empty-state {
+        padding: 30px 20px;
+        text-align: center;
+        color: var(--fg-dim);
+        font-size: 13px;
+    }
+    .empty-state i {
+        font-size: 28px;
+        margin-bottom: 10px;
+        display: block;
+        opacity: 0.4;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+        background: var(--fg-dim);
+        border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--fg-muted);
+    }
+
+    /* Toast notification */
+    .toast-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 2000;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .toast {
+        padding: 12px 18px;
+        border-radius: var(--radius-md);
+        background: var(--bg-elevated);
+        border: 1px solid var(--border);
+        color: var(--fg);
+        font-size: 13px;
+        box-shadow: var(--shadow-md);
+        animation: toastIn 0.3s ease-out, toastOut 0.3s ease-in 2.7s forwards;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .toast.success { border-color: rgba(52,211,153,0.3); }
+    .toast.success i { color: var(--success); }
+    .toast.error { border-color: rgba(248,113,113,0.3); }
+    .toast.error i { color: var(--error); }
+    @keyframes toastIn {
+        from { opacity: 0; transform: translateX(40px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes toastOut {
+        from { opacity: 1; }
+        to { opacity: 0; transform: translateY(-10px); }
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+        .sidebar { width: 260px; }
+        .message { max-width: 90%; }
+    }
+    @media (max-width: 700px) {
+        .sidebar { display: none; }
+        .chat-container { max-width: 100%; }
+        .header { padding: 10px 14px; }
+        .messages { padding: 16px; }
+        .input-area { padding: 12px 14px 16px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🤖 AI Agent</h1>
-        <div class="settings">
-            <select id="modelSelect"></select>
-            <div class="options">
-                <label>
-                    <input type="checkbox" id="reasoningToggle" />
-                    Reasoning
+    <!-- Background layers -->
+    <div class="bg-layer">
+        <div class="bg-blob"></div>
+        <div class="bg-blob"></div>
+        <div class="bg-blob"></div>
+    </div>
+    <div class="bg-noise"></div>
+    <div class="bg-grid"></div>
+
+    <!-- App content -->
+    <div class="app-layer">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-brand">
+                <div class="brand-icon">🤖</div>
+                <h1>AI Agent</h1>
+            </div>
+            <div class="header-controls">
+                <select id="modelSelect" class="ctrl-select">
+                    <option value="qwen/qwen3-next-80b-a3b-instruct:free">Qwen 3 Next (Free)</option>
+                    <option value="arcee-ai/trinity-large-preview:free">Trinity Large Preview (Free)</option>
+                    <option value="google/gemma-4-26b-a4b-it:free">Gemma 4 26B (Free)</option>
+                    <option value="nvidia/nemotron-3-super-120b-a12b:free">Nemotron 3 Super (Free)</option>
+                    <option value="minimax/minimax-m2.5:free">MiniMax M2.5 (Free)</option>
+                </select>
+                <label class="toggle-wrap">
+                    <span>Reasoning</span>
+                    <input type="checkbox" id="reasoningToggle">
+                    <div class="toggle-track"></div>
                 </label>
+                <button id="loginBtn" class="btn btn-accent">Login</button>
+                <div id="userBadge" class="user-badge" style="display:none;">
+                    <div class="avatar">U</div>
+                    <span id="usernameDisplay">User</span>
+                    <button class="logout-btn" id="logoutBtn">✕</button>
+                </div>
             </div>
-            <button onclick="showLoginModal()" id="loginBtn" class="btn-secondary">Login</button>
-            <div id="userInfo" class="user-info" style="display:none;">
-                <span id="usernameDisplay"></span>
-                <button onclick="logout()" class="btn-secondary" style="padding: 5px 10px; font-size: 12px;">Logout</button>
+        </header>
+
+        <!-- Main container -->
+        <div class="main-container">
+            <!-- Chat container -->
+            <div class="chat-container">
+                <div id="messages" class="messages">
+                    <div class="welcome-state">
+                        <div class="welcome-icon">✨</div>
+                        <h2>Welcome to AI Agent</h2>
+                        <p>Your intelligent assistant powered by cutting-edge AI models. Ask questions, execute commands, manage files, and more.</p>
+                        <div class="welcome-shortcuts">
+                            <div class="shortcut-chip" onclick="useShortcut('Create a Python script that...')">Create a Python script</div>
+                            <div class="shortcut-chip" onclick="useShortcut('List all files in current directory')">List files</div>
+                            <div class="shortcut-chip" onclick="useShortcut('Explain how to...')">Explain concept</div>
+                            <div class="shortcut-chip" onclick="useShortcut('Help me debug this code...')">Debug code</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-area">
+                    <div class="input-wrap">
+                        <textarea id="userInput" placeholder="Type your message..." rows="1"></textarea>
+                        <div class="input-hint">Press Enter to send, Shift+Enter for new line</div>
+                    </div>
+                    <div class="input-actions">
+                        <button id="sendBtn" class="btn btn-accent">Send ➤</button>
+                    </div>
+                </div>
+                <div id="terminal" class="terminal"></div>
             </div>
+
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="sidebar-tabs">
+                    <button class="tab active" data-tab="files">
+                        <i>📁</i>
+                        Files
+                    </button>
+                    <button class="tab" data-tab="skills">
+                        <i>⚡</i>
+                        Skills
+                    </button>
+                    <button class="tab" data-tab="invites">
+                        <i>📨</i>
+                        Invites
+                    </button>
+                    <button class="tab" data-tab="stats">
+                        <i>📊</i>
+                        Stats
+                    </button>
+                </div>
+
+                <div id="tab-files" class="tab-content active">
+                    <div class="tab-header">
+                        <h3>File Explorer</h3>
+                        <button class="btn" id="refreshFiles">⟳</button>
+                    </div>
+                    <div id="fileList"></div>
+                </div>
+
+                <div id="tab-skills" class="tab-content">
+                    <div class="tab-header">
+                        <h3>Available Skills</h3>
+                        <button class="btn btn-accent" id="newSkillBtn">+ New</button>
+                    </div>
+                    <div id="skillList"></div>
+                </div>
+
+                <div id="tab-invites" class="tab-content">
+                    <div class="tab-header">
+                        <h3>Invite Codes</h3>
+                        <button class="btn btn-accent" id="newInviteBtn">+ Create</button>
+                    </div>
+                    <div id="inviteList"></div>
+                </div>
+
+                <div id="tab-stats" class="tab-content">
+                    <div class="tab-header">
+                        <h3>Usage Statistics</h3>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="statRequests">0</div>
+                            <div class="stat-label">Requests Today</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="statTokens">0</div>
+                            <div class="stat-label">Tokens Used</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="statLimit">100</div>
+                            <div class="stat-label">Daily Limit</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="statRemaining">100</div>
+                            <div class="stat-label">Remaining</div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
         </div>
     </div>
 
-    <div class="main-container">
-        <div class="chat-container">
-            <div class="messages" id="messages"></div>
-            <div class="input-area">
-                <textarea 
-                    id="messageInput" 
-                    placeholder="Type your message... (Press Ctrl+Enter to send)"
-                    onkeydown="if(event.ctrlKey && event.key === 'Enter') sendMessage()"
-                ></textarea>
-                <button onclick="sendMessage()" id="sendBtn">Send</button>
-                <button onclick="resetChat()" class="btn-secondary">Reset</button>
-            </div>
-        </div>
-
-        <div class="sidebar">
-            <div class="sidebar-tabs">
-                <button class="tab active" onclick="switchTab('files')">📁 Files</button>
-                <button class="tab" onclick="switchTab('skills')">⚡ Skills</button>
-                <button class="tab" onclick="switchTab('invites')">📨 Invites</button>
-                <button class="tab" onclick="switchTab('stats')">📊 Stats</button>
-            </div>
-            
-            <div id="filesTab" class="tab-content active">
-                <div class="sidebar-header" style="padding: 10px; font-weight: bold;">File Explorer</div>
-                <div class="file-explorer" id="fileExplorer"></div>
-            </div>
-            
-            <div id="skillsTab" class="tab-content">
-                <div style="padding: 10px; display: flex; gap: 5px;">
-                    <button onclick="showCreateSkillModal()" class="btn-primary" style="flex: 1;">+ New Skill</button>
-                </div>
-                <div id="skillsList"></div>
-            </div>
-            
-            <div id="invitesTab" class="tab-content">
-                <div style="padding: 10px; display: flex; gap: 5px;">
-                    <button onclick="showCreateInviteModal()" class="btn-primary" style="flex: 1;">+ Create Invite</button>
-                </div>
-                <div id="invitesList"></div>
-            </div>
-            
-            <div id="statsTab" class="tab-content">
-                <div id="userStats"></div>
-            </div>
-            
-            <div class="terminal" id="terminal">
-                <div class="terminal-line">Terminal ready...</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Login/Register Modal -->
-    <div id="loginModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Login / Register</h2>
-                <button class="modal-close" onclick="closeModal('loginModal')">&times;</button>
-            </div>
-            <div class="form-group">
-                <label>API Key (if you have one)</label>
-                <input type="text" id="loginApiKey" placeholder="Enter your API key" />
-            </div>
-            <div class="form-group">
-                <label>Or register with invite code</label>
-                <input type="text" id="registerInviteCode" placeholder="Invite code (optional)" />
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-head">
+                <h2>Login to AI Agent</h2>
+                <button class="modal-close" onclick="closeModal('loginModal')">×</button>
             </div>
             <div class="form-group">
                 <label>Username</label>
-                <input type="text" id="registerUsername" placeholder="Choose a username" />
+                <input type="text" id="loginUsername" class="ctrl-input" placeholder="Enter username">
             </div>
-            <button onclick="loginWithKey()" class="btn-primary" style="width: 100%; margin-bottom: 10px;">Login with API Key</button>
-            <button onclick="registerUser()" class="btn-secondary" style="width: 100%;">Register New Account</button>
+            <div class="form-group">
+                <label>API Key (optional for registration)</label>
+                <input type="text" id="loginApiKey" class="ctrl-input" placeholder="Invite code">
+            </div>
+            <button class="btn btn-accent btn-full" onclick="handleLogin()">Login / Register</button>
+            <div class="divider">or</div>
+            <button class="btn btn-full" onclick="closeModal('loginModal')">Cancel</button>
         </div>
     </div>
 
-    <!-- Create Skill Modal -->
-    <div id="createSkillModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
+    <!-- New Skill Modal -->
+    <div id="skillModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-head">
                 <h2>Create New Skill</h2>
-                <button class="modal-close" onclick="closeModal('createSkillModal')">&times;</button>
+                <button class="modal-close" onclick="closeModal('skillModal')">×</button>
             </div>
             <div class="form-group">
                 <label>Skill Name</label>
-                <input type="text" id="skillName" placeholder="e.g., python-expert" />
+                <input type="text" id="skillName" class="ctrl-input" placeholder="e.g., python-expert">
             </div>
             <div class="form-group">
                 <label>Description</label>
-                <textarea id="skillDescription" placeholder="What does this skill do?" rows="3"></textarea>
+                <textarea id="skillDescription" placeholder="What does this skill do?"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Commands (one per line)</label>
+                <textarea id="skillCommands" placeholder="read_file&#10;write_file&#10;run_command" style="min-height: 100px;"></textarea>
             </div>
             <div class="form-group">
                 <label>Category</label>
-                <select id="skillCategory">
+                <select id="skillCategory" class="ctrl-select">
                     <option value="general">General</option>
                     <option value="coding">Coding</option>
                     <option value="devops">DevOps</option>
-                    <option value="data">Data Science</option>
-                    <option value="web">Web Development</option>
+                    <option value="data">Data</option>
+                    <option value="web">Web</option>
                 </select>
             </div>
-            <div class="form-group">
-                <label>Commands (JSON array)</label>
-                <textarea id="skillCommands" placeholder='[{"tool": "run_command", "params": {"command": "python --version"}}]' rows="5"></textarea>
-            </div>
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" id="skillPublic" /> Make public
-                </label>
-            </div>
-            <button onclick="createSkill()" class="btn-primary" style="width: 100%;">Create Skill</button>
+            <label class="form-group checkbox-label">
+                <input type="checkbox" id="skillPublic">
+                <span>Make public (visible to all users)</span>
+            </label>
+            <button class="btn btn-accent btn-full" onclick="saveSkill()">Create Skill</button>
         </div>
     </div>
 
-    <!-- Create Invite Modal -->
-    <div id="createInviteModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Create Invitation</h2>
-                <button class="modal-close" onclick="closeModal('createInviteModal')">&times;</button>
+    <!-- New Invite Modal -->
+    <div id="inviteModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-head">
+                <h2>Create Invite Code</h2>
+                <button class="modal-close" onclick="closeModal('inviteModal')">×</button>
             </div>
             <div class="form-group">
                 <label>Max Uses</label>
-                <input type="number" id="inviteMaxUses" value="1" min="1" max="100" />
+                <input type="number" id="inviteMaxUses" class="ctrl-input" value="5" min="1" max="100">
             </div>
             <div class="form-group">
                 <label>Expires In (days)</label>
-                <input type="number" id="inviteExpiresDays" value="7" min="1" max="365" />
+                <input type="number" id="inviteExpires" class="ctrl-input" value="7" min="1" max="365">
             </div>
-            <button onclick="createInvite()" class="btn-primary" style="width: 100%;">Generate Invite Code</button>
+            <button class="btn btn-accent btn-full" onclick="createInvite()">Generate Code</button>
         </div>
     </div>
 
+    <!-- Toast container -->
+    <div id="toastContainer" class="toast-container"></div>
+
     <script>
-        const API_BASE = window.location.origin;
-        let apiKey = localStorage.getItem('openrouter_api_key') || '';
-        let selectedModel = localStorage.getItem('selected_model') || 'qwen/qwen-coder-plus:free';
+        // State
         let currentUser = null;
-        let currentDownloadData = null;
+        let currentApiKey = null;
+        let conversationHistory = [];
+        let isStreaming = false;
+
+        // API Base URL
+        const API_BASE = window.location.origin;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-            if (apiKey) {
-                loadUserInfo();
+            loadUserFromStorage();
+            setupEventListeners();
+            if (currentUser) {
+                loadStats();
+                loadFiles();
+                loadSkills();
+                loadInvites();
             }
-            loadModels();
-            refreshFiles();
         });
 
-        document.getElementById('modelSelect').addEventListener('change', (e) => {
-            selectedModel = e.target.value;
-            localStorage.setItem('selected_model', selectedModel);
-        });
+        // Event listeners
+        function setupEventListeners() {
+            // Login
+            document.getElementById('loginBtn').addEventListener('click', () => {
+                if (currentUser) {
+                    showUserMenu();
+                } else {
+                    openModal('loginModal');
+                }
+            });
 
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
-            event.target.classList.add('active');
-            document.getElementById(tabName + 'Tab').classList.add('active');
-            
-            if (tabName === 'skills') loadSkills();
-            if (tabName === 'invites') loadInvites();
-            if (tabName === 'stats') loadStats();
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+
+            // Send message
+            document.getElementById('sendBtn').addEventListener('click', sendMessage);
+            document.getElementById('userInput').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            // Tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+            });
+
+            // Refresh buttons
+            document.getElementById('refreshFiles').addEventListener('click', loadFiles);
+            document.getElementById('newSkillBtn').addEventListener('click', () => openModal('skillModal'));
+            document.getElementById('newInviteBtn').addEventListener('click', () => openModal('inviteModal'));
+
+            // Auto-resize textarea
+            document.getElementById('userInput').addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 160) + 'px';
+            });
         }
 
-        async function loadModels() {
-            try {
-                const response = await fetch(`${API_BASE}/api/models`);
-                const models = await response.json();
-                
-                const select = document.getElementById('modelSelect');
-                select.innerHTML = '';
-                
-                models.forEach(model => {
-                    const option = document.createElement('option');
-                    option.value = model.id;
-                    option.textContent = model.name;
-                    if (model.id === selectedModel) {
-                        option.selected = true;
-                    }
-                    select.appendChild(option);
-                });
-            } catch (error) {
-                console.error('Error loading models:', error);
+        // User management
+        function loadUserFromStorage() {
+            const saved = localStorage.getItem('ai_agent_user');
+            if (saved) {
+                const data = JSON.parse(saved);
+                currentUser = data.username;
+                currentApiKey = data.apiKey;
+                updateUserBadge();
             }
         }
 
-        function showLoginModal() {
-            document.getElementById('loginModal').classList.add('active');
+        function saveUserToStorage() {
+            localStorage.setItem('ai_agent_user', JSON.stringify({
+                username: currentUser,
+                apiKey: currentApiKey
+            }));
         }
 
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
-        }
+        function updateUserBadge() {
+            const badge = document.getElementById('userBadge');
+            const usernameDisplay = document.getElementById('usernameDisplay');
+            const loginBtn = document.getElementById('loginBtn');
 
-        function showCreateSkillModal() {
-            if (!apiKey) {
-                alert('Please login first');
-                showLoginModal();
-                return;
+            if (currentUser) {
+                badge.style.display = 'flex';
+                usernameDisplay.textContent = currentUser;
+                loginBtn.style.display = 'none';
+            } else {
+                badge.style.display = 'none';
+                loginBtn.style.display = 'inline-flex';
             }
-            document.getElementById('createSkillModal').classList.add('active');
         }
 
-        function showCreateInviteModal() {
-            if (!apiKey) {
-                alert('Please login first');
-                showLoginModal();
-                return;
-            }
-            document.getElementById('createInviteModal').classList.add('active');
-        }
+        async function handleLogin() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const apiKey = document.getElementById('loginApiKey').value.trim();
 
-        async function loginWithKey() {
-            const key = document.getElementById('loginApiKey').value.trim();
-            if (!key) {
-                alert('Please enter an API key');
-                return;
-            }
-            
-            apiKey = key;
-            localStorage.setItem('openrouter_api_key', apiKey);
-            closeModal('loginModal');
-            await loadUserInfo();
-        }
-
-        async function registerUser() {
-            const username = document.getElementById('registerUsername').value.trim();
-            const inviteCode = document.getElementById('registerInviteCode').value.trim();
-            
             if (!username) {
-                alert('Please enter a username');
+                showToast('Please enter a username', 'error');
                 return;
             }
-            
-            try {
-                const response = await fetch(`${API_BASE}/api/register`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        username: username,
-                        invite_code: inviteCode || null
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    apiKey = data.api_key;
-                    localStorage.setItem('openrouter_api_key', apiKey);
-                    closeModal('loginModal');
-                    alert('Registration successful! Your API key has been saved.');
-                    await loadUserInfo();
-                } else {
-                    alert('Registration failed: ' + data.error);
-                }
-            } catch (error) {
-                alert('Registration error: ' + error.message);
-            }
-        }
 
-        async function loadUserInfo() {
             try {
-                const response = await fetch(`${API_BASE}/api/user/me`, {
-                    headers: {'X-API-Key': apiKey}
+                const response = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, invite_code: apiKey || undefined })
                 });
-                
+
+                const data = await response.json();
+
                 if (response.ok) {
-                    currentUser = await response.json();
-                    document.getElementById('userInfo').style.display = 'flex';
-                    document.getElementById('usernameDisplay').textContent = currentUser.username;
-                    document.getElementById('loginBtn').style.display = 'none';
+                    currentUser = data.username;
+                    currentApiKey = data.api_key;
+                    saveUserToStorage();
+                    updateUserBadge();
+                    closeModal('loginModal');
+                    showToast(`Welcome, ${currentUser}!`, 'success');
+                    loadStats();
+                    loadFiles();
+                    loadSkills();
+                    loadInvites();
                 } else {
-                    logout();
+                    showToast(data.error || 'Login failed', 'error');
                 }
             } catch (error) {
-                console.error('Error loading user info:', error);
+                showToast('Connection error', 'error');
             }
         }
 
         function logout() {
-            apiKey = '';
             currentUser = null;
-            localStorage.removeItem('openrouter_api_key');
-            document.getElementById('userInfo').style.display = 'none';
-            document.getElementById('loginBtn').style.display = 'block';
-            addSystemMessage('Logged out');
+            currentApiKey = null;
+            localStorage.removeItem('ai_agent_user');
+            updateUserBadge();
+            conversationHistory = [];
+            document.getElementById('messages').innerHTML = `
+                <div class="welcome-state">
+                    <div class="welcome-icon">✨</div>
+                    <h2>Welcome to AI Agent</h2>
+                    <p>Your intelligent assistant powered by cutting-edge AI models.</p>
+                </div>
+            `;
+            showToast('Logged out successfully', 'success');
         }
 
-        async function loadSkills() {
-            if (!apiKey) {
-                document.getElementById('skillsList').innerHTML = '<div style="padding: 10px; color: #aaa;">Please login to view skills</div>';
-                return;
-            }
-            
-            try {
-                const response = await fetch(`${API_BASE}/api/skills`);
-                const skills = await response.json();
-                
-                const container = document.getElementById('skillsList');
-                container.innerHTML = '';
-                
-                skills.forEach(skill => {
-                    const item = document.createElement('div');
-                    item.className = 'skill-item';
-                    item.innerHTML = `
-                        <div class="skill-name">${skill.name}</div>
-                        <div class="skill-description">${skill.description || 'No description'}</div>
-                        <div style="font-size: 0.8em; color: #666; margin-top: 5px;">Category: ${skill.category} | Uses: ${skill.usage_count}</div>
-                    `;
-                    item.onclick = () => useSkill(skill.name);
-                    container.appendChild(item);
-                });
-            } catch (error) {
-                console.error('Error loading skills:', error);
-            }
+        function showUserMenu() {
+            // Could show a dropdown menu with user options
+            showToast(`Logged in as ${currentUser}`, 'success');
         }
 
-        async function createSkill() {
-            const name = document.getElementById('skillName').value.trim();
-            const description = document.getElementById('skillDescription').value.trim();
-            const category = document.getElementById('skillCategory').value;
-            const isPublic = document.getElementById('skillPublic').checked;
-            let commands;
-            
-            try {
-                commands = JSON.parse(document.getElementById('skillCommands').value);
-            } catch (e) {
-                alert('Invalid JSON for commands');
-                return;
-            }
-            
-            if (!name) {
-                alert('Skill name is required');
-                return;
-            }
-            
-            try {
-                const response = await fetch(`${API_BASE}/api/skills`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-API-Key': apiKey
-                    },
-                    body: JSON.stringify({
-                        name,
-                        description,
-                        commands,
-                        category,
-                        is_public: isPublic ? 1 : 0
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    alert('Skill created successfully!');
-                    closeModal('createSkillModal');
-                    loadSkills();
-                    // Clear form
-                    document.getElementById('skillName').value = '';
-                    document.getElementById('skillDescription').value = '';
-                    document.getElementById('skillCommands').value = '';
-                    document.getElementById('skillPublic').checked = false;
-                } else {
-                    alert('Failed to create skill: ' + data.error);
-                }
-            } catch (error) {
-                alert('Error creating skill: ' + error.message);
-            }
-        }
-
-        function useSkill(skillName) {
-            const input = document.getElementById('messageInput');
-            input.value = `<skill>${skillName}</skill> ` + input.value;
-            input.focus();
-        }
-
-        async function loadInvites() {
-            if (!apiKey) {
-                document.getElementById('invitesList').innerHTML = '<div style="padding: 10px; color: #aaa;">Please login to view invites</div>';
-                return;
-            }
-            
-            try {
-                const response = await fetch(`${API_BASE}/api/invites`, {
-                    headers: {'X-API-Key': apiKey}
-                });
-                
-                const invites = await response.json();
-                
-                const container = document.getElementById('invitesList');
-                container.innerHTML = '';
-                
-                invites.forEach(invite => {
-                    const item = document.createElement('div');
-                    item.className = 'invite-item';
-                    item.innerHTML = `
-                        <div class="invite-code">${invite.invite_code}</div>
-                        <div style="font-size: 0.8em; color: #aaa; margin-top: 5px;">
-                            Uses: ${invite.current_uses}/${invite.max_uses} | 
-                            Expires: ${new Date(invite.expires_at).toLocaleDateString()}
-                        </div>
-                    `;
-                    container.appendChild(item);
-                });
-                
-                if (invites.length === 0) {
-                    container.innerHTML = '<div style="padding: 10px; color: #aaa;">No invites yet</div>';
-                }
-            } catch (error) {
-                console.error('Error loading invites:', error);
-            }
-        }
-
-        async function createInvite() {
-            const maxUses = parseInt(document.getElementById('inviteMaxUses').value);
-            const expiresDays = parseInt(document.getElementById('inviteExpiresDays').value);
-            
-            try {
-                const response = await fetch(`${API_BASE}/api/invites`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-API-Key': apiKey
-                    },
-                    body: JSON.stringify({
-                        max_uses: maxUses,
-                        expires_in_days: expiresDays
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    alert(`Invite code created: ${data.invite_code}\n\nShare this code with others!`);
-                    closeModal('createInviteModal');
-                    loadInvites();
-                } else {
-                    alert('Failed to create invite: ' + data.error);
-                }
-            } catch (error) {
-                alert('Error creating invite: ' + error.message);
-            }
-        }
-
-        async function loadStats() {
-            if (!apiKey) {
-                document.getElementById('userStats').innerHTML = '<div style="padding: 10px; color: #aaa;">Please login to view stats</div>';
-                return;
-            }
-            
-            try {
-                const response = await fetch(`${API_BASE}/api/user/me`, {
-                    headers: {'X-API-Key': apiKey}
-                });
-                
-                const user = await response.json();
-                const stats = user.stats || {};
-                
-                document.getElementById('userStats').innerHTML = `
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-value">${stats.requests_today || 0}</div>
-                            <div class="stat-label">Requests Today</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value">${stats.tokens_today || 0}</div>
-                            <div class="stat-label">Tokens Today</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value">${stats.daily_request_limit || '∞'}</div>
-                            <div class="stat-label">Daily Request Limit</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value">${stats.daily_token_limit || '∞'}</div>
-                            <div class="stat-label">Daily Token Limit</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value">${stats.total_requests || 0}</div>
-                            <div class="stat-label">Total Requests</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value">${stats.successful_requests || 0}</div>
-                            <div class="stat-label">Successful</div>
-                        </div>
-                    </div>
-                `;
-            } catch (error) {
-                console.error('Error loading stats:', error);
-            }
-        }
-
-        function addMessage(content, role) {
-            const messagesDiv = document.getElementById('messages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${role}`;
-            
-            if (role === 'assistant' && content.includes('<tool>')) {
-                // Parse and format tool calls
-                const formatted = content.replace(
-                    /<tool>(\w+)(\{.*?\})<\/tool>/g, 
-                    '🔧 Executing: $1$2'
-                );
-                messageDiv.textContent = formatted;
-            } else {
-                messageDiv.textContent = content;
-            }
-            
-            messagesDiv.appendChild(messageDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            return messageDiv;
-        }
-
-        function addSystemMessage(content) {
-            const messagesDiv = document.getElementById('messages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message system';
-            messageDiv.textContent = content;
-            messagesDiv.appendChild(messageDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
-
-        function logToTerminal(content, isError = false) {
-            const terminal = document.getElementById('terminal');
-            const line = document.createElement('div');
-            line.className = isError ? 'terminal-error' : 'terminal-line';
-            line.textContent = `> ${content}`;
-            terminal.appendChild(line);
-            terminal.scrollTop = terminal.scrollHeight;
-        }
-
+        // Chat functionality
         async function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const sendBtn = document.getElementById('sendBtn');
+            const input = document.getElementById('userInput');
             const message = input.value.trim();
-            
-            if (!message) return;
-            if (!apiKey) {
-                alert('Please login first');
-                showLoginModal();
+
+            if (!message || isStreaming) return;
+            if (!currentUser) {
+                showToast('Please login first', 'error');
+                openModal('loginModal');
                 return;
             }
 
-            input.value = '';
-            sendBtn.disabled = true;
-            
+            // Add user message
             addMessage(message, 'user');
-            
-            const useReasoning = document.getElementById('reasoningToggle').checked;
-            const assistantMsg = addMessage('', 'assistant');
-            let fullContent = '';
+            input.value = '';
+            input.style.height = 'auto';
+
+            // Show typing indicator
+            showTypingIndicator();
+
+            isStreaming = true;
+            document.getElementById('sendBtn').disabled = true;
+
+            const model = document.getElementById('modelSelect').value;
+            const reasoning = document.getElementById('reasoningToggle').checked;
 
             try {
                 const response = await fetch(`${API_BASE}/api/chat`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-API-Key': apiKey
+                        'X-API-Key': currentApiKey
                     },
                     body: JSON.stringify({
-                        message: message,
-                        stream: true,
-                        use_reasoning: useReasoning,
-                        model: selectedModel
+                        message,
+                        model,
+                        reasoning,
+                        stream: true
                     })
                 });
 
+                hideTypingIndicator();
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Request failed');
+                }
+
+                // Create assistant message element
+                const assistantMsg = addMessage('', 'assistant');
+                const contentDiv = assistantMsg.querySelector('.message-content') || assistantMsg;
+
+                // Stream response
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
+                let fullResponse = '';
 
                 while (true) {
                     const { done, value } = await reader.read();
@@ -1062,130 +1470,408 @@
 
                     for (const line of lines) {
                         if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            if (data === '[DONE]') continue;
+
                             try {
-                                const data = JSON.parse(line.slice(6));
-                                
-                                if (data.type === 'content') {
-                                    fullContent += data.content;
-                                    assistantMsg.textContent = fullContent;
-                                } else if (data.type === 'tool_result') {
-                                    const result = data.result;
-                                    if (result.success) {
-                                        logToTerminal(`✓ ${result.message || 'Command executed'}`);
-                                        if (result.files) {
-                                            refreshFiles();
-                                        }
-                                    } else {
-                                        logToTerminal(`✗ ${result.error}`, true);
-                                    }
-                                } else if (data.type === 'download_ready') {
-                                    currentDownloadData = data.data;
-                                    const downloadBtn = document.createElement('button');
-                                    downloadBtn.className = 'download-btn';
-                                    downloadBtn.textContent = `📥 Download ${currentDownloadData.file_count} files`;
-                                    downloadBtn.onclick = downloadFiles;
-                                    assistantMsg.appendChild(downloadBtn);
-                                } else if (data.type === 'error') {
-                                    logToTerminal(data.error, true);
-                                    assistantMsg.textContent += `\n\nError: ${data.error}`;
-                                } else if (data.type === 'done') {
-                                    refreshFiles();
+                                const parsed = JSON.parse(data);
+                                const content = parsed.choices?.[0]?.delta?.content || '';
+                                const downloadData = parsed.download;
+
+                                if (content) {
+                                    fullResponse += content;
+                                    contentDiv.textContent = fullResponse;
+                                    scrollToBottom();
+                                }
+
+                                if (downloadData) {
+                                    addDownloadButton(contentDiv, downloadData);
                                 }
                             } catch (e) {
                                 console.error('Parse error:', e);
                             }
                         }
                     }
-                    
-                    assistantMsg.scrollTop = assistantMsg.scrollHeight;
                 }
 
+                // Update history
+                conversationHistory.push({ role: 'user', content: message });
+                conversationHistory.push({ role: 'assistant', content: fullResponse });
+
+                // Reload stats
+                loadStats();
+
             } catch (error) {
-                assistantMsg.textContent = `Error: ${error.message}`;
-                logToTerminal(error.message, true);
+                hideTypingIndicator();
+                addMessage(`Error: ${error.message}`, 'system');
+                showToast(error.message, 'error');
             } finally {
-                sendBtn.disabled = false;
-                refreshFiles();
+                isStreaming = false;
+                document.getElementById('sendBtn').disabled = false;
             }
         }
 
-        async function downloadFiles() {
-            if (!currentDownloadData) return;
+        function addMessage(content, role) {
+            const messagesDiv = document.getElementById('messages');
             
+            // Remove welcome state if present
+            const welcome = messagesDiv.querySelector('.welcome-state');
+            if (welcome) welcome.remove();
+
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${role}`;
+            
+            if (role === 'assistant' || role === 'user') {
+                msgDiv.innerHTML = `<div class="message-content">${escapeHtml(content)}</div>`;
+            } else {
+                msgDiv.textContent = content;
+            }
+
+            messagesDiv.appendChild(msgDiv);
+            scrollToBottom();
+            return msgDiv;
+        }
+
+        function addDownloadButton(parent, downloadData) {
+            const btn = document.createElement('button');
+            btn.className = 'download-btn';
+            btn.innerHTML = '📥 Download Files';
+            btn.onclick = () => downloadFiles(downloadData);
+            parent.appendChild(btn);
+        }
+
+        async function downloadFiles(downloadData) {
             try {
-                const response = await fetch(`${API_BASE}/api/download`, {
+                const link = document.createElement('a');
+                link.href = `data:application/zip;base64,${downloadData.zip_data}`;
+                link.download = downloadData.filename || 'files.zip';
+                link.click();
+                showToast('Download started', 'success');
+            } catch (error) {
+                showToast('Download failed', 'error');
+            }
+        }
+
+        function showTypingIndicator() {
+            const messagesDiv = document.getElementById('messages');
+            const indicator = document.createElement('div');
+            indicator.className = 'message assistant typing-indicator';
+            indicator.id = 'typingIndicator';
+            indicator.innerHTML = `
+                <div class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            `;
+            messagesDiv.appendChild(indicator);
+            scrollToBottom();
+        }
+
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) indicator.remove();
+        }
+
+        function scrollToBottom() {
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function useShortcut(text) {
+            document.getElementById('userInput').value = text;
+            document.getElementById('userInput').focus();
+        }
+
+        // Tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+
+            // Load content based on tab
+            if (tabName === 'files') loadFiles();
+            if (tabName === 'skills') loadSkills();
+            if (tabName === 'invites') loadInvites();
+            if (tabName === 'stats') loadStats();
+        }
+
+        // File management
+        async function loadFiles() {
+            if (!currentApiKey) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/files`, {
+                    headers: { 'X-API-Key': currentApiKey }
+                });
+
+                if (response.ok) {
+                    const files = await response.json();
+                    renderFiles(files);
+                }
+            } catch (error) {
+                console.error('Failed to load files:', error);
+            }
+        }
+
+        function renderFiles(files) {
+            const container = document.getElementById('fileList');
+            if (!files || files.length === 0) {
+                container.innerHTML = '<div class="empty-state"><i>📂</i>No files found</div>';
+                return;
+            }
+
+            container.innerHTML = files.map(file => `
+                <div class="file-item ${file.type}" onclick="handleFileClick('${file.path}', '${file.type}')">
+                    <div class="file-icon">${file.type === 'directory' ? '📁' : '📄'}</div>
+                    <div class="file-name">${escapeHtml(file.name)}</div>
+                </div>
+            `).join('');
+        }
+
+        async function handleFileClick(path, type) {
+            if (type === 'directory') {
+                // Navigate into directory (could implement breadcrumb navigation)
+                showToast(`Directory: ${path}`, 'info');
+            } else {
+                // Read file content
+                try {
+                    const response = await fetch(`${API_BASE}/api/files/read`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-API-Key': currentApiKey
+                        },
+                        body: JSON.stringify({ path })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        addMessage(`File content:\n\`\`\`\n${data.content}\n\`\`\``, 'assistant');
+                        showToast('File loaded', 'success');
+                    }
+                } catch (error) {
+                    showToast('Failed to read file', 'error');
+                }
+            }
+        }
+
+        // Skills management
+        async function loadSkills() {
+            if (!currentApiKey) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/skills`, {
+                    headers: { 'X-API-Key': currentApiKey }
+                });
+
+                if (response.ok) {
+                    const skills = await response.json();
+                    renderSkills(skills);
+                }
+            } catch (error) {
+                console.error('Failed to load skills:', error);
+            }
+        }
+
+        function renderSkills(skills) {
+            const container = document.getElementById('skillList');
+            if (!skills || skills.length === 0) {
+                container.innerHTML = '<div class="empty-state"><i>⚡</i>No skills yet</div>';
+                return;
+            }
+
+            container.innerHTML = skills.map(skill => `
+                <div class="skill-item" onclick="useSkill('${skill.name}')">
+                    <div class="skill-name">${escapeHtml(skill.name)}</div>
+                    <div class="skill-description">${escapeHtml(skill.description || 'No description')}</div>
+                    <div class="skill-meta">
+                        <span>📂 ${skill.category || 'general'}</span>
+                        <span>👁️ ${skill.uses || 0} uses</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function useSkill(skillName) {
+            const input = document.getElementById('userInput');
+            input.value = `<skill>${skillName}</skill> `;
+            input.focus();
+            showToast(`Skill "${skillName}" inserted`, 'success');
+        }
+
+        async function saveSkill() {
+            const name = document.getElementById('skillName').value.trim();
+            const description = document.getElementById('skillDescription').value.trim();
+            const commandsText = document.getElementById('skillCommands').value.trim();
+            const category = document.getElementById('skillCategory').value;
+            const isPublic = document.getElementById('skillPublic').checked;
+
+            if (!name) {
+                showToast('Skill name is required', 'error');
+                return;
+            }
+
+            const commands = commandsText.split('\n').filter(c => c.trim());
+
+            try {
+                const response = await fetch(`${API_BASE}/api/skills`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-API-Key': apiKey
+                        'X-API-Key': currentApiKey
                     },
                     body: JSON.stringify({
-                        zip_data: currentDownloadData.zip_data,
-                        filename: currentDownloadData.filename
+                        name,
+                        description,
+                        commands,
+                        category,
+                        public: isPublic
                     })
                 });
-                
+
                 if (response.ok) {
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = currentDownloadData.filename;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(url);
+                    showToast('Skill created', 'success');
+                    closeModal('skillModal');
+                    loadSkills();
+                    // Clear form
+                    document.getElementById('skillName').value = '';
+                    document.getElementById('skillDescription').value = '';
+                    document.getElementById('skillCommands').value = '';
+                } else {
+                    const data = await response.json();
+                    showToast(data.error || 'Failed to create skill', 'error');
                 }
             } catch (error) {
-                alert('Download failed: ' + error.message);
+                showToast('Connection error', 'error');
             }
         }
 
-        async function refreshFiles() {
+        // Invites management
+        async function loadInvites() {
+            if (!currentApiKey) return;
+
             try {
-                const response = await fetch(`${API_BASE}/api/execute`, {
+                const response = await fetch(`${API_BASE}/api/invites`, {
+                    headers: { 'X-API-Key': currentApiKey }
+                });
+
+                if (response.ok) {
+                    const invites = await response.json();
+                    renderInvites(invites);
+                }
+            } catch (error) {
+                console.error('Failed to load invites:', error);
+            }
+        }
+
+        function renderInvites(invites) {
+            const container = document.getElementById('inviteList');
+            if (!invites || invites.length === 0) {
+                container.innerHTML = '<div class="empty-state"><i>📨</i>No invite codes</div>';
+                return;
+            }
+
+            container.innerHTML = invites.map(invite => `
+                <div class="invite-item">
+                    <div class="invite-code">${escapeHtml(invite.code)}</div>
+                    <div class="invite-meta">
+                        <span>✓ ${invite.current_uses}/${invite.max_uses} used</span>
+                        <span>📅 Expires: ${new Date(invite.expires_at).toLocaleDateString()}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function createInvite() {
+            const maxUses = parseInt(document.getElementById('inviteMaxUses').value) || 5;
+            const expiresDays = parseInt(document.getElementById('inviteExpires').value) || 7;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/invites`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-API-Key': currentApiKey
                     },
                     body: JSON.stringify({
-                        command: 'list_files',
-                        params: { path: '.' }
+                        max_uses: maxUses,
+                        expires_in_days: expiresDays
                     })
                 });
 
-                const data = await response.json();
-                const explorer = document.getElementById('fileExplorer');
-                explorer.innerHTML = '';
-
-                if (data.success && data.files) {
-                    data.files.forEach(file => {
-                        const item = document.createElement('div');
-                        item.className = `file-item ${file.type}`;
-                        item.innerHTML = `
-                            <span>${file.type === 'directory' ? '📁' : '📄'}</span>
-                            <span>${file.name}</span>
-                        `;
-                        explorer.appendChild(item);
-                    });
+                if (response.ok) {
+                    const data = await response.json();
+                    showToast(`Invite created: ${data.code}`, 'success');
+                    closeModal('inviteModal');
+                    loadInvites();
+                } else {
+                    const data = await response.json();
+                    showToast(data.error || 'Failed to create invite', 'error');
                 }
             } catch (error) {
-                console.error('Error refreshing files:', error);
+                showToast('Connection error', 'error');
             }
         }
 
-        async function resetChat() {
+        // Stats
+        async function loadStats() {
+            if (!currentApiKey) return;
+
             try {
-                await fetch(`${API_BASE}/api/reset`, { 
-                    method: 'POST',
-                    headers: {'X-API-Key': apiKey}
+                const response = await fetch(`${API_BASE}/api/user/stats`, {
+                    headers: { 'X-API-Key': currentApiKey }
                 });
-                document.getElementById('messages').innerHTML = '';
-                addSystemMessage('Chat history cleared');
+
+                if (response.ok) {
+                    const stats = await response.json();
+                    document.getElementById('statRequests').textContent = stats.requests_today || 0;
+                    document.getElementById('statTokens').textContent = (stats.tokens_today || 0).toLocaleString();
+                    document.getElementById('statLimit').textContent = stats.daily_limit || 100;
+                    document.getElementById('statRemaining').textContent = stats.remaining || 0;
+                }
             } catch (error) {
-                console.error('Error resetting chat:', error);
+                console.error('Failed to load stats:', error);
             }
         }
+
+        // Utility functions
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<i>${type === 'success' ? '✓' : '✕'}</i> ${escapeHtml(message)}`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Close modals on outside click
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    overlay.classList.remove('active');
+                }
+            });
+        });
     </script>
 </body>
 </html>

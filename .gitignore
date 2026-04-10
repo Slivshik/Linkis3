@@ -1,38 +1,5 @@
 ```
 # Dependencies
-backend/venv/
-backend/.venv/
-backend/__pycache__/
-backend/*.pyc
-
-# Database
-backend/users.db
-
-# Environment
-backend/.env
-backend/.env.local
-backend/*.env.*
-
-# Logs
-*.log
-
-# Editor/IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*.tmp
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Coverage
-coverage/
-htmlcov/
-.coverage
-
-# Python
 __pycache__/
 *.pyc
 *.pyo
@@ -41,6 +8,7 @@ __pycache__/
 env/
 venv/
 .venv/
+.venv.bak/
 pip-log.txt
 pip-delete-this-directory.txt
 .tox/
@@ -51,20 +19,42 @@ nosetests.xml
 coverage.xml
 *.cover
 *.log
-.git/
-.mypy_cache/
+*.pot
+*.pyc
+*.pyo
 .pytest_cache/
+.mypy_cache/
 .hypothesis/
+
+# Environment variables
+.env
+.venv
+.env.bak
+env.bak
+*.env
+*.env.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
 
 # Build artifacts
 dist/
 build/
 *.egg-info/
+.eggs/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
 *.egg
-
-# Virtual environments
-.env
-.venv
-env/
-ENV/
 ```
