@@ -240,14 +240,11 @@ def execute():
 def get_models():
     """Get available free models"""
     models = [
-        {"id": "qwen/qwen-coder-plus:free", "name": "Qwen Coder Plus (Free)"},
-        {"id": "qwen/qwen-2.5-coder-32b-instruct:free", "name": "Qwen 2.5 Coder 32B (Free)"},
-        {"id": "meta-llama/llama-3-8b-instruct:free", "name": "Llama 3 8B (Free)"},
-        {"id": "google/gemma-2-9b-it:free", "name": "Gemma 2 9B (Free)"},
-        {"id": "mistralai/mistral-7b-instruct:free", "name": "Mistral 7B (Free)"},
-        {"id": "qwen/qwen-2.5-72b-instruct:free", "name": "Qwen 2.5 72B (Free)"},
-        {"id": "deepseek/deepseek-r1-distill-llama-70b:free", "name": "DeepSeek R1 Distill (Free)"},
-        {"id": "nvidia/nemotron-3-super-120b-a12b:free", "name": "Nemotron Super 120B (Free)"},
+        {"id": "arcee-ai/trinity-large-preview:free", "name": "Trinity Large Preview (Free)"},
+        {"id": "google/gemma-4-26b-a4b-it:free", "name": "Gemma 4 26B (Free)"},
+        {"id": "nvidia/nemotron-3-super-120b-a12b:free", "name": "Nemotron 3 Super (Free)"},
+        {"id": "minimax/minimax-m2.5:free", "name": "MiniMax M2.5 (Free)"},
+        {"id": "qwen/qwen3-next-80b-a3b-instruct:free", "name": "Qwen 3 Next (Free)"},
     ]
     return jsonify(models)
 
