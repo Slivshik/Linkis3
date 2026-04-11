@@ -1,7 +1,6 @@
 from openai import OpenAI
 import os
 import json
-import httpx
 
 class AIAgent:
     def __init__(self, api_key=None, base_url="https://openrouter.ai/api/v1"):
@@ -51,16 +50,11 @@ Use skills when appropriate: <skill>skill_name</skill>
         current_api_key = api_key_override or self.api_key
         
         try:
-            # Create httpx client for proper connection handling
-            http_client = httpx.Client(
-                timeout=60.0,
-                limits=httpx.Limits(max_keepalive_connections=5, max_connections=10)
-            )
-            
             client = OpenAI(
                 api_key=current_api_key,
                 base_url=self.base_url,
-                http_client=http_client
+                timeout=60.0,
+                max_retries=0,
             )
             
             response = client.chat.completions.create(
