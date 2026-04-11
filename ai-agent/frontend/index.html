@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linkis³ — AI Agent Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #0a0a0f;
+  --surface: #111118;
+  --card:    #16161f;
+  --card2:   #1c1c28;
+  --border:  rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --fg:      #e2e0f0;
+  --fg2:     #8b899e;
+  --fg3:     #4a4860;
+  --accent:  #7c6af7;
+  --accent2: #a855f7;
+  --glow:    rgba(124,106,247,0.15);
+  --green:   #4ade80;
+  --red:     #f87171;
+  --yellow:  #fbbf24;
+  --cyan:    #22d3ee;
+  --r-sm:4px; --r-md:8px; --r-lg:14px; --r-xl:20px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Instrument Sans',sans-serif;background:var(--bg);color:var(--fg);display:flex;flex-direction:column}
+
+/* ── NOISE & GRID ── */
+body::before{content:'';position:fixed;inset:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 20% 0%, rgba(124,106,247,0.07) 0%, transparent 60%),radial-gradient(ellipse 60% 40% at 80% 100%, rgba(168,85,247,0.05) 0%, transparent 50%);pointer-events:none;z-index:0}
+
+/* ── LAYOUT ── */
+#app{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh}
+.topbar{display:flex;align-items:center;gap:16px;padding:0 20px;height:52px;border-bottom:1px solid var(--border);background:rgba(10,10,15,0.8);backdrop-filter:blur(16px);flex-shrink:0}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit}
+.logo-mark{width:28px;height:28px;border-radius:var(--r-sm);background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-size:12px;font-weight:700;color:#fff;font-family:'IBM Plex Mono',monospace;flex-shrink:0}
+.logo-text{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;letter-spacing:-0.02em}
+.logo-text sup{font-size:8px;opacity:0.6;vertical-align:super}
+.topbar-sep{width:1px;height:24px;background:var(--border)}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+
+/* ── MODEL SELECT ── */
+.model-btn{display:flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--card);color:var(--fg2);font-size:12px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:.15s;white-space:nowrap}
+.model-btn:hover{border-color:var(--border2);color:var(--fg)}
+.model-tag{padding:2px 5px;border-radius:3px;font-size:10px;font-weight:600;background:var(--glow);color:var(--accent)}
+
+/* ── TOGGLE ── */
+.toggle-row{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--fg2)}
+.toggle{position:relative;width:32px;height:18px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{position:absolute;inset:0;border-radius:9px;background:var(--card2);border:1px solid var(--border);cursor:pointer;transition:.2s}
+.toggle-track::after{content:'';position:absolute;width:12px;height:12px;border-radius:50%;background:var(--fg3);top:2px;left:2px;transition:.2s}
+.toggle input:checked + .toggle-track{background:var(--glow);border-color:var(--accent)}
+.toggle input:checked + .toggle-track::after{left:16px;background:var(--accent)}
+
+/* ── USER BADGE ── */
+.user-badge{display:flex;align-items:center;gap:8px;padding:4px 10px;border-radius:var(--r-md);border:1px solid var(--border);background:var(--card);cursor:pointer;transition:.15s;font-size:13px}
+.user-badge:hover{border-color:var(--border2)}
+.avatar{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-size:11px;flex-shrink:0}
+.admin-pip{width:6px;height:6px;border-radius:50%;background:var(--yellow);margin-left:2px}
+
+/* ── MAIN AREA ── */
+.main{display:flex;flex:1;overflow:hidden}
+.sidebar{width:260px;flex-shrink:0;border-right:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;overflow:hidden}
+.chat-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.sidebar-header h3{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--fg3)}
+.sidebar-tabs{display:flex;padding:10px 10px 0;gap:2px}
+.stab{flex:1;padding:6px 4px;font-size:11px;font-weight:600;text-align:center;border:none;background:transparent;color:var(--fg3);border-radius:var(--r-sm) var(--r-sm) 0 0;cursor:pointer;transition:.15s;letter-spacing:.02em}
+.stab:hover{color:var(--fg2)}
+.stab.active{background:var(--card);color:var(--fg);border:1px solid var(--border);border-bottom:1px solid var(--card)}
+.stab-body{flex:1;overflow-y:auto;padding:14px}
+.stab-panel{display:none}
+.stab-panel.active{display:block}
+
+/* ── CONVERSATIONS ── */
+.convo-item{padding:9px 11px;border-radius:var(--r-md);border:1px solid transparent;cursor:pointer;margin-bottom:4px;transition:.15s}
+.convo-item:hover{background:var(--card);border-color:var(--border)}
+.convo-item.active-convo{background:var(--card);border-color:var(--accent);border-opacity:0.4}
+.convo-title{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.convo-meta{font-size:11px;color:var(--fg3);margin-top:2px}
+.convo-actions{display:flex;gap:4px;margin-top:4px;opacity:0}
+.convo-item:hover .convo-actions{opacity:1}
+
+/* ── NEW CHAT BTN ── */
+.new-chat-btn{margin:12px;padding:9px;border-radius:var(--r-md);border:1px dashed var(--border2);background:transparent;color:var(--fg3);font-size:13px;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center;gap:6px;font-family:'Instrument Sans',sans-serif}
+.new-chat-btn:hover{background:var(--card);color:var(--fg);border-style:solid}
+
+/* ── CHAT MESSAGES ── */
+.messages{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:16px}
+.msg{display:flex;gap:12px;max-width:800px}
+.msg.user{flex-direction:row-reverse;align-self:flex-end}
+.msg-avatar{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;font-size:13px;margin-top:2px}
+.msg.user .msg-avatar{background:linear-gradient(135deg,var(--accent),var(--accent2))}
+.msg.assistant .msg-avatar{background:var(--card2);border:1px solid var(--border)}
+.msg-bubble{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 16px;font-size:14px;line-height:1.6;max-width:680px}
+.msg.user .msg-bubble{background:linear-gradient(135deg,rgba(124,106,247,0.15),rgba(168,85,247,0.1));border-color:rgba(124,106,247,0.25)}
+.msg.assistant .msg-bubble{border-radius:4px var(--r-lg) var(--r-lg) var(--r-lg)}
+.msg.user .msg-bubble{border-radius:var(--r-lg) 4px var(--r-lg) var(--r-lg)}
+.msg-bubble pre{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;overflow-x:auto;margin:8px 0;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.5}
+.msg-bubble code{font-family:'IBM Plex Mono',monospace;font-size:12px;background:rgba(255,255,255,0.06);padding:1px 4px;border-radius:3px}
+.msg-bubble pre code{background:none;padding:0}
+.msg-time{font-size:10px;color:var(--fg3);margin-top:4px;opacity:0}
+.msg:hover .msg-time{opacity:1}
+
+/* ── TOOL RESULT ── */
+.tool-result{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--cyan);border-radius:var(--r-md);padding:10px 12px;margin:8px 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg2)}
+.tool-result-header{font-size:10px;color:var(--cyan);font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:4px}
+
+/* ── TYPING INDICATOR ── */
+.typing{display:flex;align-items:center;gap:4px;padding:10px 14px}
+.typing span{width:6px;height:6px;border-radius:50%;background:var(--fg3);animation:typingDot 1.2s ease-in-out infinite}
+.typing span:nth-child(2){animation-delay:.2s}
+.typing span:nth-child(3){animation-delay:.4s}
+@keyframes typingDot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+
+/* ── INPUT AREA ── */
+.input-area{border-top:1px solid var(--border);background:rgba(10,10,15,0.9);backdrop-filter:blur(16px);padding:16px 20px}
+.input-row{display:flex;align-items:flex-end;gap:10px;max-width:800px;margin:0 auto}
+.input-wrap{flex:1;background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;transition:.2s;display:flex;flex-direction:column}
+.input-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--glow)}
+textarea#userInput{width:100%;padding:12px 14px;background:transparent;border:none;color:var(--fg);font-size:14px;font-family:'Instrument Sans',sans-serif;resize:none;outline:none;max-height:160px;min-height:44px;line-height:1.5}
+textarea#userInput::placeholder{color:var(--fg3)}
+.input-toolbar{display:flex;align-items:center;gap:6px;padding:6px 10px 6px;border-top:1px solid var(--border)}
+.send-btn{width:38px;height:38px;border-radius:var(--r-md);background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;cursor:pointer;display:grid;place-items:center;font-size:16px;transition:.15s;flex-shrink:0}
+.send-btn:hover{opacity:0.85;transform:translateY(-1px)}
+.send-btn:disabled{opacity:0.4;transform:none}
+.icon-btn{padding:5px 8px;border-radius:var(--r-sm);background:transparent;border:1px solid var(--border);color:var(--fg3);font-size:11px;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:.15s;display:flex;align-items:center;gap:4px}
+.icon-btn:hover{background:var(--card2);color:var(--fg);border-color:var(--border2)}
+
+/* ── SHORTCUTS ── */
+.shortcuts{display:flex;gap:6px;flex-wrap:wrap;max-width:800px;margin:0 auto 10px;padding:0 0}
+.shortcut{padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--fg3);font-size:11px;cursor:pointer;transition:.15s;font-family:'Instrument Sans',sans-serif}
+.shortcut:hover{background:var(--card);color:var(--fg);border-color:var(--border2)}
+
+/* ── ANNOUNCEMENTS ── */
+.announcement{padding:8px 14px;font-size:12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
+.announcement.info{background:rgba(34,211,238,0.06);color:var(--cyan)}
+.announcement.warning{background:rgba(251,191,36,0.06);color:var(--yellow)}
+.announcement.error{background:rgba(248,113,113,0.06);color:var(--red)}
+.ann-dismiss{margin-left:auto;cursor:pointer;opacity:0.6;background:none;border:none;color:inherit}
+
+/* ── EMPTY STATE ── */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--fg3);text-align:center;padding:40px}
+.empty-icon{font-size:40px;margin-bottom:4px}
+.empty-state h3{font-size:16px;color:var(--fg2)}
+.empty-state p{font-size:13px;line-height:1.6}
+.empty-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:8px}
+.empty-action{padding:8px 16px;border-radius:var(--r-md);border:1px solid var(--border);background:var(--card);color:var(--fg2);font-size:13px;cursor:pointer;transition:.15s;font-family:'Instrument Sans',sans-serif}
+.empty-action:hover{border-color:var(--border2);color:var(--fg)}
+
+/* ── SIDEBAR ITEMS ── */
+.skill-item{padding:10px;border:1px solid var(--border);border-radius:var(--r-md);margin-bottom:6px;cursor:pointer;transition:.15s}
+.skill-item:hover{border-color:var(--accent);background:var(--glow)}
+.skill-name{font-size:13px;font-weight:600}
+.skill-desc{font-size:11px;color:var(--fg3);margin-top:2px}
+.skill-tags{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
+.tag{padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;background:var(--card2);color:var(--fg3)}
+.tag.public{background:rgba(74,222,128,0.12);color:var(--green)}
+
+.invite-item{padding:10px;border:1px solid var(--border);border-radius:var(--r-md);margin-bottom:6px}
+.invite-code{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--accent)}
+.invite-meta{font-size:11px;color:var(--fg3);margin-top:4px;display:flex;gap:12px}
+.invite-bar{height:4px;background:var(--card2);border-radius:2px;margin-top:6px;overflow:hidden}
+.invite-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;transition:.3s}
+
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat-card{background:var(--card2);border:1px solid var(--border);border-radius:var(--r-md);padding:10px}
+.stat-val{font-size:20px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--fg)}
+.stat-label{font-size:10px;color:var(--fg3);margin-top:2px;text-transform:uppercase;letter-spacing:.04em}
+.usage-bar{height:4px;background:var(--card2);border-radius:2px;margin-top:8px;overflow:hidden}
+.usage-fill{height:100%;border-radius:2px;transition:.3s}
+
+/* ── BTN ── */
+.btn{padding:7px 14px;border-radius:var(--r-md);border:1px solid var(--border);background:var(--card);color:var(--fg2);font-size:12px;font-family:'Instrument Sans',sans-serif;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--card2);color:var(--fg);border-color:var(--border2)}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent;color:#fff}
+.btn-primary:hover{opacity:0.85;color:#fff}
+.btn-danger{background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.25);color:var(--red)}
+.btn-danger:hover{background:rgba(248,113,113,0.2)}
+.btn-sm{padding:4px 9px;font-size:11px}
+.btn-ghost{background:transparent;border-color:transparent}
+.btn-ghost:hover{background:var(--card2);border-color:var(--border)}
+
+/* ── FORMS ── */
+.form-group{margin-bottom:14px}
+.form-label{font-size:11px;font-weight:600;color:var(--fg3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;display:block}
+.form-input{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--card2);color:var(--fg);font-size:13px;font-family:'Instrument Sans',sans-serif;outline:none;transition:.2s}
+.form-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--glow)}
+.form-input::placeholder{color:var(--fg3)}
+select.form-input option{background:var(--card2)}
+textarea.form-input{resize:vertical;min-height:80px}
+.form-error{font-size:11px;color:var(--red);margin-top:4px}
+.form-hint{font-size:11px;color:var(--fg3);margin-top:4px}
+
+/* ── MODAL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:var(--r-xl);width:100%;max-width:480px;max-height:90vh;overflow-y:auto;animation:modalIn .2s ease}
+@keyframes modalIn{from{transform:scale(0.95) translateY(10px);opacity:0}to{transform:none;opacity:1}}
+.modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:16px;font-weight:600}
+.modal-close{background:none;border:none;color:var(--fg3);font-size:20px;cursor:pointer;line-height:1;padding:4px;border-radius:var(--r-sm);transition:.15s}
+.modal-close:hover{background:var(--card2);color:var(--fg)}
+.modal-body{padding:20px 24px}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+.wide-modal{max-width:700px}
+
+/* ── ADMIN PANEL ── */
+.admin-tabs{display:flex;gap:2px;padding:16px 24px 0;border-bottom:1px solid var(--border)}
+.atab{padding:8px 16px;font-size:13px;font-weight:500;border:none;background:transparent;color:var(--fg3);border-bottom:2px solid transparent;cursor:pointer;transition:.15s;margin-bottom:-1px}
+.atab:hover{color:var(--fg2)}
+.atab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.atab-body{padding:20px 24px;overflow-y:auto;max-height:60vh}
+.atab-panel{display:none}
+.atab-panel.active{display:block}
+
+/* ── DATA TABLE ── */
+.data-table{width:100%;border-collapse:collapse;font-size:12px}
+.data-table th{padding:8px 10px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--fg3);border-bottom:1px solid var(--border);white-space:nowrap}
+.data-table td{padding:10px 10px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:rgba(255,255,255,0.02)}
+.badge{padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600}
+.badge-green{background:rgba(74,222,128,0.12);color:var(--green)}
+.badge-red{background:rgba(248,113,113,0.12);color:var(--red)}
+.badge-yellow{background:rgba(251,191,36,0.12);color:var(--yellow)}
+.badge-purple{background:rgba(124,106,247,0.12);color:var(--accent)}
+.badge-gray{background:rgba(255,255,255,0.06);color:var(--fg3)}
+
+/* ── STAT BANNER (admin) ── */
+.stat-banner{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:20px}
+.stat-banner-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px}
+.stat-banner-val{font-size:24px;font-weight:700;font-family:'IBM Plex Mono',monospace}
+.stat-banner-label{font-size:11px;color:var(--fg3);margin-top:2px}
+.stat-banner-card.accent{border-color:rgba(124,106,247,0.3);background:rgba(124,106,247,0.06)}
+.stat-banner-card.green{border-color:rgba(74,222,128,0.2);background:rgba(74,222,128,0.04)}
+.stat-banner-card.yellow{border-color:rgba(251,191,36,0.2);background:rgba(251,191,36,0.04)}
+.stat-banner-card.red{border-color:rgba(248,113,113,0.2);background:rgba(248,113,113,0.04)}
+
+/* ── SEARCH BAR ── */
+.search-row{display:flex;gap:8px;margin-bottom:14px;align-items:center}
+.search-input{flex:1;padding:7px 12px;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface);color:var(--fg);font-size:12px;outline:none;transition:.2s;font-family:'Instrument Sans',sans-serif}
+.search-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--glow)}
+.search-input::placeholder{color:var(--fg3)}
+
+/* ── PROFILE ── */
+.profile-avatar{width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-size:28px;margin:0 auto 12px;border:2px solid var(--border2)}
+.profile-name{font-size:18px;font-weight:600;text-align:center}
+.profile-email{font-size:12px;color:var(--fg3);text-align:center;margin-top:2px}
+.profile-section{margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+.profile-section h4{font-size:12px;font-weight:600;color:var(--fg3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px}
+
+/* ── DROPDOWN MENU ── */
+.dropdown{position:relative;display:inline-block}
+.dropdown-menu{position:absolute;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);min-width:180px;z-index:50;box-shadow:0 8px 32px rgba(0,0,0,0.5);overflow:hidden;display:none}
+.dropdown-menu.open{display:block;animation:menuIn .15s ease}
+@keyframes menuIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.menu-item{display:flex;align-items:center;gap:10px;padding:9px 14px;font-size:13px;color:var(--fg2);cursor:pointer;transition:.1s;border:none;background:none;width:100%;text-align:left;font-family:'Instrument Sans',sans-serif}
+.menu-item:hover{background:var(--card2);color:var(--fg)}
+.menu-item.danger{color:var(--red)}
+.menu-item.danger:hover{background:rgba(248,113,113,0.1)}
+.menu-sep{height:1px;background:var(--border);margin:4px 0}
+.menu-label{padding:6px 14px 2px;font-size:10px;font-weight:600;color:var(--fg3);text-transform:uppercase;letter-spacing:.06em}
+
+/* ── TOAST ── */
+#toasts{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:200}
+.toast{padding:10px 14px;border-radius:var(--r-md);font-size:13px;display:flex;align-items:center;gap:8px;background:var(--card2);border:1px solid var(--border);animation:toastIn .2s ease;box-shadow:0 4px 20px rgba(0,0,0,0.4)}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+.toast.success{border-color:rgba(74,222,128,0.3);color:var(--green)}
+.toast.error{border-color:rgba(248,113,113,0.3);color:var(--red)}
+.toast.info{border-color:rgba(34,211,238,0.3);color:var(--cyan)}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--card2);border-radius:2px}
+::-webkit-scrollbar-thumb:hover{background:var(--fg3)}
+
+/* ── MISC ── */
+.flex{display:flex}.gap-1{gap:4px}.gap-2{gap:8px}.gap-3{gap:12px}.items-center{align-items:center}.justify-between{justify-content:space-between}.ml-auto{margin-left:auto}
+.text-muted{color:var(--fg3)}.text-sm{font-size:12px}.text-xs{font-size:11px}.mono{font-family:'IBM Plex Mono',monospace}
+.mt-1{margin-top:4px}.mt-2{margin-top:8px}.mt-3{margin-top:12px}
+.w-full{width:100%}.hidden{display:none!important}
+.spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,0.2);border-top-color:currentColor;border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.copy-btn{padding:2px 6px;font-size:10px;border-radius:3px;background:var(--card2);border:1px solid var(--border);color:var(--fg3);cursor:pointer;transition:.15s}
+.copy-btn:hover{color:var(--fg)}
+.pagination{display:flex;align-items:center;gap:8px;justify-content:flex-end;margin-top:12px;font-size:12px;color:var(--fg3)}
+
+/* ── MINI CHART ── */
+.mini-chart{height:40px;display:flex;align-items:flex-end;gap:2px}
+.mini-bar{flex:1;min-height:2px;border-radius:2px 2px 0 0;background:var(--accent);opacity:0.5;transition:.3s}
+.mini-bar:last-child{opacity:1}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .sidebar{position:fixed;left:-260px;top:52px;bottom:0;z-index:30;transition:.25s;box-shadow:4px 0 20px rgba(0,0,0,0.5)}
+  .sidebar.open{left:0}
+  .messages{padding:16px}
+  .topbar{padding:0 12px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <a href="#" class="logo" onclick="return false">
+      <div class="logo-mark">L³</div>
+      <span class="logo-text">Linkis<sup>3</sup></span>
+    </a>
+    <div class="topbar-sep"></div>
+    <button class="icon-btn" id="sidebarToggle" onclick="toggleSidebar()">☰ History</button>
+    <div class="toggle-row" style="display:none" id="reasoningRow">
+      <label class="toggle"><input type="checkbox" id="reasoningToggle"><span class="toggle-track"></span></label>
+      <span>Reasoning</span>
+    </div>
+    <div class="topbar-right">
+      <div id="modelDisplay" class="model-btn" onclick="openModal('modelModal')">
+        <span id="modelName">Qwen Coder Plus</span>
+        <span class="model-tag" id="modelTag">Coding</span>
+        <span style="color:var(--fg3)">▾</span>
+      </div>
+      <div class="dropdown">
+        <div class="user-badge" id="userBadge" onclick="toggleUserMenu()">
+          <div class="avatar" id="userAvatar">?</div>
+          <span id="userBadgeName">Sign In</span>
+          <div class="admin-pip" id="adminPip" style="display:none"></div>
+        </div>
+        <div class="dropdown-menu" id="userMenu">
+          <div class="menu-label" id="menuUsername">Guest</div>
+          <div class="menu-item" onclick="openModal('profileModal');closeDropdowns()">👤 Profile</div>
+          <div class="menu-item" onclick="openModal('statsModal');loadMyStats();closeDropdowns()">📊 My Stats</div>
+          <div class="menu-item" onclick="openModal('notesModal');loadNotes();closeDropdowns()">📝 Notes</div>
+          <div class="menu-sep"></div>
+          <div class="menu-item admin-only hidden" onclick="openModal('adminModal');loadAdminStats();closeDropdowns()">⚙️ Admin Panel</div>
+          <div class="menu-sep admin-only hidden"></div>
+          <div class="menu-item danger" onclick="logout();closeDropdowns()">⏏ Sign Out</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANNOUNCEMENTS -->
+  <div id="announcements"></div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- SIDEBAR -->
+    <div class="sidebar" id="sidebar">
+      <div style="padding:10px">
+        <button class="new-chat-btn w-full" onclick="newConversation()">＋ New Conversation</button>
+      </div>
+      <div class="sidebar-tabs">
+        <button class="stab active" data-stab="convos" onclick="switchStab('convos')">Chats</button>
+        <button class="stab" data-stab="skills" onclick="switchStab('skills')">Skills</button>
+        <button class="stab" data-stab="invites" onclick="switchStab('invites')">Invites</button>
+        <button class="stab" data-stab="files" onclick="switchStab('files')">Files</button>
+      </div>
+      <div class="stab-body">
+        <div class="stab-panel active" id="stab-convos">
+          <div id="convoList"><div class="empty-state" style="height:auto;padding:20px"><div class="empty-icon">💬</div><p>Sign in to see chat history</p></div></div>
+        </div>
+        <div class="stab-panel" id="stab-skills">
+          <div class="flex gap-2 mb-2" style="margin-bottom:10px">
+            <button class="btn btn-primary btn-sm" onclick="openModal('skillModal')">＋ New Skill</button>
+            <button class="btn btn-sm" onclick="loadSkills()">↻ Refresh</button>
+          </div>
+          <div id="skillList"></div>
+        </div>
+        <div class="stab-panel" id="stab-invites">
+          <div class="flex gap-2" style="margin-bottom:10px">
+            <button class="btn btn-primary btn-sm" onclick="openModal('inviteModal')">＋ Create</button>
+            <button class="btn btn-sm" onclick="loadInvites()">↻ Refresh</button>
+          </div>
+          <div id="inviteList"></div>
+        </div>
+        <div class="stab-panel" id="stab-files">
+          <div class="flex gap-2" style="margin-bottom:10px">
+            <button class="btn btn-sm" onclick="loadFiles()">↻ Refresh</button>
+          </div>
+          <div id="fileList"></div>
+        </div>
+      </div>
+      <!-- mini stats -->
+      <div style="padding:12px;border-top:1px solid var(--border)" id="sidebarStats">
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-val" id="ss-req">—</div><div class="stat-label">Requests</div></div>
+          <div class="stat-card"><div class="stat-val" id="ss-tok">—</div><div class="stat-label">Tokens</div></div>
+        </div>
+        <div class="usage-bar mt-2"><div class="usage-fill" id="ss-bar" style="width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2))"></div></div>
+        <div class="text-xs text-muted mt-1" id="ss-bar-label"></div>
+      </div>
+    </div>
+
+    <!-- CHAT AREA -->
+    <div class="chat-area">
+      <div class="messages" id="messages">
+        <div class="empty-state" id="welcomeScreen">
+          <div class="empty-icon">🤖</div>
+          <h3>Linkis³ AI Agent</h3>
+          <p>A powerful coding assistant with file system access, VM execution, and advanced reasoning. Sign in to get started.</p>
+          <div class="empty-actions">
+            <button class="empty-action" onclick="openModal('loginModal')">Sign In</button>
+            <button class="empty-action" onclick="openModal('registerModal')">Create Account</button>
+          </div>
+        </div>
+      </div>
+      <div class="input-area">
+        <div class="shortcuts" id="shortcuts">
+          <button class="shortcut" onclick="useShortcut('Create a Python script that ')">🐍 Python script</button>
+          <button class="shortcut" onclick="useShortcut('Debug this code: ')">🐛 Debug</button>
+          <button class="shortcut" onclick="useShortcut('Explain how ')">💡 Explain</button>
+          <button class="shortcut" onclick="useShortcut('Create a REST API with Flask that ')">🔌 Flask API</button>
+          <button class="shortcut" onclick="useShortcut('Write unit tests for ')">✅ Unit tests</button>
+          <button class="shortcut" onclick="useShortcut('Refactor this code to be more ')">♻ Refactor</button>
+        </div>
+        <div class="input-row">
+          <div class="input-wrap">
+            <textarea id="userInput" placeholder="Ask anything… ⌘+Enter to send" rows="1"></textarea>
+            <div class="input-toolbar">
+              <button class="icon-btn" onclick="clearChat()">🗑 Clear</button>
+              <label class="toggle-row" style="cursor:pointer">
+                <label class="toggle"><input type="checkbox" id="streamToggle" checked><span class="toggle-track"></span></label>
+                <span class="text-xs">Stream</span>
+              </label>
+              <div class="ml-auto flex gap-1">
+                <button class="icon-btn" id="attachBtn" onclick="showToast('File upload coming soon','info')">📎</button>
+              </div>
+            </div>
+          </div>
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOASTS -->
+<div id="toasts"></div>
+
+<!-- ══════════ MODALS ══════════ -->
+
+<!-- LOGIN -->
+<div class="overlay" id="loginModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Sign In</span><button class="modal-close" onclick="closeModal('loginModal')">×</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Username</label><input class="form-input" id="loginUser" placeholder="your_username" onkeydown="if(event.key==='Enter')handleLogin()"></div>
+      <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')handleLogin()"></div>
+      <div id="loginError" class="form-error hidden"></div>
+      <div style="margin-top:16px">Or use API key directly:</div>
+      <div class="form-group mt-2"><label class="form-label">API Key</label><input class="form-input mono" id="loginApiKey" placeholder="lk_..." onkeydown="if(event.key==='Enter')handleApiKeyLogin()"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('loginModal');openModal('registerModal')">Register</button>
+      <button class="btn" onclick="handleApiKeyLogin()">Use API Key</button>
+      <button class="btn btn-primary" onclick="handleLogin()">Sign In</button>
+    </div>
+  </div>
+</div>
+
+<!-- REGISTER -->
+<div class="overlay" id="registerModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Create Account</span><button class="modal-close" onclick="closeModal('registerModal')">×</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Username</label><input class="form-input" id="regUser" placeholder="cooluser123"></div>
+      <div class="form-group"><label class="form-label">Email (optional)</label><input class="form-input" id="regEmail" placeholder="you@example.com"></div>
+      <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" id="regPass" placeholder="At least 6 characters"></div>
+      <div class="form-group"><label class="form-label">Invite Code (optional)</label><input class="form-input" id="regInvite" placeholder="abc123..."></div>
+      <div id="regError" class="form-error hidden"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('registerModal');openModal('loginModal')">Back to Sign In</button>
+      <button class="btn btn-primary" onclick="handleRegister()">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODEL SELECT -->
+<div class="overlay" id="modelModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Select Model</span><button class="modal-close" onclick="closeModal('modelModal')">×</button></div>
+    <div class="modal-body" id="modelList" style="display:flex;flex-direction:column;gap:6px"></div>
+  </div>
+</div>
+
+<!-- SKILL CREATE -->
+<div class="overlay" id="skillModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Create Skill</span><button class="modal-close" onclick="closeModal('skillModal')">×</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Name</label><input class="form-input" id="skillName" placeholder="my_skill"></div>
+      <div class="form-group"><label class="form-label">Description</label><input class="form-input" id="skillDesc" placeholder="What does this skill do?"></div>
+      <div class="form-group"><label class="form-label">Category</label>
+        <select class="form-input" id="skillCat">
+          <option value="general">General</option>
+          <option value="coding">Coding</option>
+          <option value="devops">DevOps</option>
+          <option value="data">Data</option>
+          <option value="security">Security</option>
+          <option value="writing">Writing</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Commands (one per line)</label><textarea class="form-input" id="skillCmds" rows="4" placeholder="run_command&#10;read_file&#10;write_file"></textarea></div>
+      <div class="toggle-row mt-2"><label class="toggle"><input type="checkbox" id="skillPublic"><span class="toggle-track"></span></label><span>Make public</span></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('skillModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSkill()">Create Skill</button>
+    </div>
+  </div>
+</div>
+
+<!-- INVITE CREATE -->
+<div class="overlay" id="inviteModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Create Invite</span><button class="modal-close" onclick="closeModal('inviteModal')">×</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Max Uses</label><input class="form-input" type="number" id="inviteMaxUses" value="1" min="1" max="100"></div>
+      <div class="form-group"><label class="form-label">Expires In (days)</label><input class="form-input" type="number" id="inviteExpiry" value="7" min="1" max="365"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('inviteModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="createInvite()">Create Invite</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE -->
+<div class="overlay" id="profileModal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Profile</span><button class="modal-close" onclick="closeModal('profileModal')">×</button></div>
+    <div class="modal-body">
+      <div class="profile-avatar" id="profileAvatar">?</div>
+      <div class="profile-name" id="profileName">—</div>
+      <div class="profile-email" id="profileEmail">—</div>
+      <div class="profile-section">
+        <h4>Edit Profile</h4>
+        <div class="form-group"><label class="form-label">Avatar Emoji</label><input class="form-input" id="profileEmoji" placeholder="🤖" maxlength="2" style="max-width:80px"></div>
+        <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="profileEmailInput" placeholder="you@example.com"></div>
+        <div class="form-group"><label class="form-label">Bio</label><textarea class="form-input" id="profileBio" placeholder="Tell us about yourself…" rows="2"></textarea></div>
+        <button class="btn btn-primary w-full" onclick="saveProfile()">Save Profile</button>
+      </div>
+      <div class="profile-section">
+        <h4>API Key</h4>
+        <div class="flex gap-2 items-center">
+          <div class="form-input mono text-xs" id="profileApiKey" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:6px 10px"></div>
+          <button class="copy-btn" onclick="copyApiKey()">Copy</button>
+          <button class="btn btn-sm btn-danger" onclick="regenKey()">Regen</button>
+        </div>
+      </div>
+      <div class="profile-section">
+        <h4>Change Password</h4>
+        <div class="form-group"><label class="form-label">Current Password</label><input class="form-input" type="password" id="oldPass" placeholder="••••••••"></div>
+        <div class="form-group"><label class="form-label">New Password</label><input class="form-input" type="password" id="newPass" placeholder="••••••••"></div>
+        <button class="btn w-full" onclick="changePassword()">Change Password</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MY STATS -->
+<div class="overlay" id="statsModal">
+  <div class="modal wide-modal">
+    <div class="modal-header"><span class="modal-title">My Statistics</span><button class="modal-close" onclick="closeModal('statsModal')">×</button></div>
+    <div class="modal-body" id="statsBody">
+      <div style="text-align:center;padding:30px;color:var(--fg3)">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<!-- NOTES -->
+<div class="overlay" id="notesModal">
+  <div class="modal wide-modal">
+    <div class="modal-header">
+      <span class="modal-title">Notes</span>
+      <div class="flex gap-2">
+        <button class="btn btn-primary btn-sm" onclick="openNewNote()">＋ Note</button>
+        <button class="modal-close" onclick="closeModal('notesModal')">×</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div id="newNoteForm" class="hidden" style="margin-bottom:16px;padding:14px;background:var(--surface);border-radius:var(--r-lg);border:1px solid var(--border)">
+        <div class="form-group"><label class="form-label">Title</label><input class="form-input" id="noteTitle" placeholder="Note title"></div>
+        <div class="form-group"><label class="form-label">Content</label><textarea class="form-input" id="noteContent" rows="4" placeholder="Your note…"></textarea></div>
+        <div class="flex gap-2"><button class="btn btn-primary btn-sm" onclick="saveNote()">Save</button><button class="btn btn-sm" onclick="cancelNote()">Cancel</button></div>
+      </div>
+      <div id="notesList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div class="overlay" id="adminModal">
+  <div class="modal" style="max-width:860px;width:95vw">
+    <div class="modal-header"><span class="modal-title">⚙️ Admin Panel</span><button class="modal-close" onclick="closeModal('adminModal')">×</button></div>
+    <div class="admin-tabs">
+      <button class="atab active" data-atab="overview" onclick="switchAtab('overview')">Overview</button>
+      <button class="atab" data-atab="users" onclick="switchAtab('users');loadAdminUsers()">Users</button>
+      <button class="atab" data-atab="keys" onclick="switchAtab('keys');loadAdminKeys()">API Keys</button>
+      <button class="atab" data-atab="logs" onclick="switchAtab('logs');loadAdminLogs()">Logs</button>
+      <button class="atab" data-atab="invites" onclick="switchAtab('invites');loadAdminInvites()">Invites</button>
+      <button class="atab" data-atab="announcements" onclick="switchAtab('announcements');loadAdminAnn()">Announcements</button>
+    </div>
+    <div class="atab-body">
+      <!-- OVERVIEW -->
+      <div class="atab-panel active" id="atab-overview">
+        <div class="stat-banner" id="adminStatBanner">
+          <div style="color:var(--fg3);padding:20px">Loading…</div>
+        </div>
+      </div>
+      <!-- USERS -->
+      <div class="atab-panel" id="atab-users">
+        <div class="search-row">
+          <input class="search-input" id="userSearch" placeholder="Search username or email…" oninput="debounce(loadAdminUsers,400)()">
+          <button class="btn btn-sm" onclick="loadAdminUsers()">Search</button>
+        </div>
+        <div id="adminUserTable">Loading…</div>
+        <div class="pagination" id="userPagination"></div>
+      </div>
+      <!-- API KEYS -->
+      <div class="atab-panel" id="atab-keys">
+        <div class="flex gap-2" style="margin-bottom:12px">
+          <input class="search-input" id="newKeyVal" placeholder="sk-or-xxxxxxxx… (new API key)" style="flex:1">
+          <input class="search-input" id="newKeyLabel" placeholder="Label" style="max-width:130px">
+          <button class="btn btn-primary btn-sm" onclick="addAdminKey()">＋ Add</button>
+        </div>
+        <div id="adminKeyTable">Loading…</div>
+      </div>
+      <!-- LOGS -->
+      <div class="atab-panel" id="atab-logs">
+        <div class="search-row">
+          <select class="search-input" id="logFilter" onchange="loadAdminLogs()" style="max-width:140px">
+            <option value="">All</option>
+            <option value="true">Success only</option>
+            <option value="false">Errors only</option>
+          </select>
+          <button class="btn btn-sm" onclick="loadAdminLogs()">Refresh</button>
+        </div>
+        <div id="adminLogTable">Loading…</div>
+      </div>
+      <!-- INVITES (admin) -->
+      <div class="atab-panel" id="atab-invites">
+        <div id="adminInviteTable">Loading…</div>
+      </div>
+      <!-- ANNOUNCEMENTS -->
+      <div class="atab-panel" id="atab-announcements">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;margin-bottom:14px">
+          <div class="form-group"><label class="form-label">Announcement</label><textarea class="form-input" id="annContent" rows="2" placeholder="System message to all users…"></textarea></div>
+          <div class="flex gap-2 items-center">
+            <select class="form-input" id="annType" style="max-width:120px">
+              <option value="info">ℹ Info</option>
+              <option value="warning">⚠ Warning</option>
+              <option value="error">🚨 Alert</option>
+            </select>
+            <input type="number" class="form-input" id="annExpiry" value="7" placeholder="Days" style="max-width:80px">
+            <span class="text-sm text-muted">days</span>
+            <button class="btn btn-primary btn-sm ml-auto" onclick="postAnnouncement()">Post</button>
+            <button class="btn btn-sm" onclick="broadcastClear()">Clear Sessions</button>
+          </div>
+        </div>
+        <div id="adminAnnList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════════
+const API = '';
+let currentApiKey = null;
+let currentUser = null;
+let currentModel = {id:'qwen/qwen-coder-plus:free', name:'Qwen Coder Plus', tag:'Coding'};
+let currentConvoId = null;
+let isStreaming = false;
+let adminPage = 1;
+let models = [];
+
+// ══════════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  loadFromStorage();
+  loadModels();
+  loadAnnouncements();
+  setupTextarea();
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.dropdown')) closeDropdowns();
+  });
+});
+
+function loadFromStorage() {
+  const saved = localStorage.getItem('lk3_auth');
+  if (saved) {
+    try {
+      const {apiKey, user} = JSON.parse(saved);
+      if (apiKey) { currentApiKey = apiKey; currentUser = user; applyAuth(); }
+    } catch(e) { localStorage.removeItem('lk3_auth'); }
+  }
+}
+
+function saveToStorage() {
+  if (currentApiKey) localStorage.setItem('lk3_auth', JSON.stringify({apiKey:currentApiKey, user:currentUser}));
+  else localStorage.removeItem('lk3_auth');
+}
+
+function applyAuth() {
+  if (!currentUser) return;
+  document.getElementById('userBadgeName').textContent = currentUser.username;
+  document.getElementById('userAvatar').textContent = currentUser.avatar_emoji || currentUser.username[0].toUpperCase();
+  document.getElementById('menuUsername').textContent = currentUser.username;
+  document.getElementById('adminPip').style.display = currentUser.is_admin ? 'block' : 'none';
+  document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', !currentUser.is_admin));
+  document.getElementById('welcomeScreen')?.remove();
+  loadConversations();
+  loadSidebarStats();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════════════════════════
+async function handleLogin() {
+  const username = document.getElementById('loginUser').value.trim();
+  const password = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginError');
+  errEl.classList.add('hidden');
+  if (!username || !password) { errEl.textContent='Enter username and password'; errEl.classList.remove('hidden'); return; }
+  try {
+    const res = await fetch(`${API}/api/login`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+    const data = await res.json();
+    if (!res.ok) { errEl.textContent=data.error; errEl.classList.remove('hidden'); return; }
+    currentApiKey = data.api_key; currentUser = data.user;
+    saveToStorage(); applyAuth(); closeModal('loginModal');
+    showToast(`Welcome back, ${currentUser.username}!`, 'success');
+    loadConversations();
+  } catch(e) { errEl.textContent='Connection error'; errEl.classList.remove('hidden'); }
+}
+
+async function handleApiKeyLogin() {
+  const key = document.getElementById('loginApiKey').value.trim();
+  if (!key) return;
+  currentApiKey = key;
+  try {
+    const res = await fetch(`${API}/api/user/me`, {headers:{'X-API-Key':key}});
+    const user = await res.json();
+    if (!res.ok) { showToast('Invalid API key', 'error'); currentApiKey=null; return; }
+    currentUser = user; saveToStorage(); applyAuth(); closeModal('loginModal');
+    showToast(`Signed in as ${user.username}`, 'success');
+  } catch(e) { showToast('Connection error','error'); currentApiKey=null; }
+}
+
+async function handleRegister() {
+  const username = document.getElementById('regUser').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const password = document.getElementById('regPass').value;
+  const invite_code = document.getElementById('regInvite').value.trim();
+  const errEl = document.getElementById('regError');
+  errEl.classList.add('hidden');
+  try {
+    const res = await fetch(`${API}/api/register`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,email,password,invite_code})});
+    const data = await res.json();
+    if (!res.ok) { errEl.textContent=data.error; errEl.classList.remove('hidden'); return; }
+    currentApiKey = data.api_key;
+    // Auto-login
+    const me = await fetch(`${API}/api/user/me`, {headers:{'X-API-Key':currentApiKey}});
+    currentUser = await me.json();
+    saveToStorage(); applyAuth(); closeModal('registerModal');
+    showToast('Account created! Welcome!', 'success');
+  } catch(e) { errEl.textContent='Connection error'; errEl.classList.remove('hidden'); }
+}
+
+function logout() {
+  currentApiKey = null; currentUser = null;
+  saveToStorage();
+  document.getElementById('userBadgeName').textContent = 'Sign In';
+  document.getElementById('userAvatar').textContent = '?';
+  document.getElementById('adminPip').style.display = 'none';
+  document.querySelectorAll('.admin-only').forEach(el=>el.classList.add('hidden'));
+  document.getElementById('convoList').innerHTML = '<div class="empty-state" style="height:auto;padding:20px"><div class="empty-icon">💬</div><p>Sign in to see chat history</p></div>';
+  document.getElementById('messages').innerHTML = `<div class="empty-state" id="welcomeScreen"><div class="empty-icon">🤖</div><h3>Linkis³ AI Agent</h3><p>Sign in to get started.</p><div class="empty-actions"><button class="empty-action" onclick="openModal('loginModal')">Sign In</button><button class="empty-action" onclick="openModal('registerModal')">Create Account</button></div></div>`;
+  showToast('Signed out','info');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// MODELS
+// ══════════════════════════════════════════════════════════════════
+async function loadModels() {
+  try {
+    const res = await fetch(`${API}/api/models`);
+    models = await res.json();
+    renderModelList();
+  } catch(e) {}
+}
+
+function renderModelList() {
+  const c = document.getElementById('modelList');
+  c.innerHTML = models.map(m => `
+    <div onclick="selectModel(${JSON.stringify(m).replace(/"/g,'&quot;')})" style="padding:10px 14px;border:1px solid var(--border);border-radius:var(--r-md);cursor:pointer;display:flex;align-items:center;gap:10px;transition:.15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:500">${m.name}</div>
+        <div class="text-xs text-muted mono">${m.id}</div>
+      </div>
+      <span class="badge badge-purple">${m.tag}</span>
+    </div>
+  `).join('');
+}
+
+function selectModel(m) {
+  currentModel = m;
+  document.getElementById('modelName').textContent = m.name;
+  document.getElementById('modelTag').textContent = m.tag;
+  closeModal('modelModal');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// CHAT
+// ══════════════════════════════════════════════════════════════════
+function setupTextarea() {
+  const ta = document.getElementById('userInput');
+  ta.addEventListener('input', () => { ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,160)+'px'; });
+  ta.addEventListener('keydown', e => { if ((e.metaKey||e.ctrlKey)&&e.key==='Enter'){e.preventDefault();sendMessage();} });
+}
+
+async function sendMessage() {
+  if (!currentApiKey) { openModal('loginModal'); return; }
+  const input = document.getElementById('userInput');
+  const msg = input.value.trim();
+  if (!msg || isStreaming) return;
+  input.value = ''; input.style.height = 'auto';
+
+  if (!currentConvoId) currentConvoId = 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+
+  addMessage(msg, 'user');
+  isStreaming = true;
+  document.getElementById('sendBtn').disabled = true;
+
+  const useStream = document.getElementById('streamToggle').checked;
+  const useReasoning = document.getElementById('reasoningToggle')?.checked || false;
+  const typingEl = showTyping();
+
+  if (useStream) {
+    await streamChat(msg, typingEl, useReasoning);
+  } else {
+    await staticChat(msg, typingEl, useReasoning);
+  }
+
+  isStreaming = false;
+  document.getElementById('sendBtn').disabled = false;
+  loadSidebarStats();
+  // Refresh conversations (debounced)
+  setTimeout(loadConversations, 1000);
+}
+
+async function streamChat(msg, typingEl, useReasoning) {
+  try {
+    const res = await fetch(`${API}/api/chat`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-API-Key':currentApiKey},
+      body: JSON.stringify({message:msg, stream:true, use_reasoning:useReasoning, model:currentModel.id, conversation_id:currentConvoId})
+    });
+    if (!res.ok) { const d=await res.json(); addMessage(`Error: ${d.error}`, 'error'); removeTyping(typingEl); return; }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let bubbleEl = null;
+    let full = '';
+
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      const lines = decoder.decode(value).split('\n');
+      for (const line of lines) {
+        if (!line.startsWith('data:')) continue;
+        try {
+          const ev = JSON.parse(line.slice(5));
+          if (ev.type === 'content') {
+            if (!bubbleEl) { removeTyping(typingEl); bubbleEl = createStreamBubble(); }
+            full += ev.content;
+            bubbleEl.innerHTML = renderMarkdown(full);
+            scrollBottom();
+          } else if (ev.type === 'tool_result') {
+            if (!bubbleEl) { removeTyping(typingEl); bubbleEl = createStreamBubble(); }
+            appendToolResult(bubbleEl, ev.result);
+          } else if (ev.type === 'download_ready') {
+            appendDownload(bubbleEl, ev.data);
+          } else if (ev.type === 'error') {
+            removeTyping(typingEl);
+            addMessage(`Error: ${ev.error}`, 'error');
+          }
+        } catch(e){}
+      }
+    }
+    if (!bubbleEl) removeTyping(typingEl);
+  } catch(e) { removeTyping(typingEl); addMessage(`Network error: ${e.message}`, 'error'); }
+}
+
+async function staticChat(msg, typingEl, useReasoning) {
+  try {
+    const res = await fetch(`${API}/api/chat`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-API-Key':currentApiKey},
+      body: JSON.stringify({message:msg, stream:false, use_reasoning:useReasoning, model:currentModel.id, conversation_id:currentConvoId})
+    });
+    removeTyping(typingEl);
+    const data = await res.json();
+    if (!res.ok) { addMessage(`Error: ${data.error}`, 'error'); return; }
+    addMessage(data.response, 'assistant');
+  } catch(e) { removeTyping(typingEl); addMessage(`Network error: ${e.message}`, 'error'); }
+}
+
+function addMessage(content, role) {
+  const messages = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = `msg ${role === 'user' ? 'user' : 'assistant'}`;
+  const avatarEmoji = role === 'user' ? (currentUser?.avatar_emoji || currentUser?.username?.[0]?.toUpperCase() || '?') : '🤖';
+  const timeStr = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  if (role === 'error') {
+    div.innerHTML = `<div class="msg-bubble" style="border-color:rgba(248,113,113,0.3);color:var(--red)">${esc(content)}</div>`;
+  } else {
+    div.innerHTML = `
+      <div class="msg-avatar">${avatarEmoji}</div>
+      <div>
+        <div class="msg-bubble">${role==='user'?esc(content):renderMarkdown(content)}</div>
+        <div class="msg-time">${timeStr}</div>
+      </div>`;
+  }
+  messages.appendChild(div);
+  scrollBottom();
+  return div;
+}
+
+function createStreamBubble() {
+  const messages = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg assistant';
+  div.innerHTML = `<div class="msg-avatar">🤖</div><div><div class="msg-bubble" id="stream-bubble-${Date.now()}"></div></div>`;
+  messages.appendChild(div);
+  scrollBottom();
+  return div.querySelector('.msg-bubble');
+}
+
+function appendToolResult(bubbleEl, result) {
+  const tr = document.createElement('div');
+  tr.className = 'tool-result';
+  tr.innerHTML = `<div class="tool-result-header">⚙ Tool Result: ${esc(result.command||'')}</div><pre>${esc(JSON.stringify(result, null, 2))}</pre>`;
+  bubbleEl.appendChild(tr);
+}
+
+function appendDownload(bubbleEl, data) {
+  const btn = document.createElement('button');
+  btn.className = 'btn btn-sm mt-2';
+  btn.textContent = '⬇ Download ' + (data.filename || 'files.zip');
+  btn.onclick = () => downloadZip(data);
+  bubbleEl.appendChild(btn);
+}
+
+function showTyping() {
+  const messages = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg assistant';
+  div.id = 'typing-indicator';
+  div.innerHTML = `<div class="msg-avatar">🤖</div><div class="msg-bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  messages.appendChild(div); scrollBottom();
+  return div;
+}
+function removeTyping(el) { el?.remove(); }
+function scrollBottom() { const m = document.getElementById('messages'); m.scrollTop = m.scrollHeight; }
+
+function clearChat() {
+  if (!confirm('Clear this conversation?')) return;
+  document.getElementById('messages').innerHTML = '';
+  fetch(`${API}/api/reset`, {method:'POST', headers:{'X-API-Key':currentApiKey}});
+  currentConvoId = null;
+}
+
+function useShortcut(text) {
+  document.getElementById('userInput').value = text;
+  document.getElementById('userInput').focus();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// CONVERSATIONS
+// ══════════════════════════════════════════════════════════════════
+async function loadConversations() {
+  if (!currentApiKey) return;
+  try {
+    const res = await fetch(`${API}/api/conversations`, {headers:{'X-API-Key':currentApiKey}});
+    if (!res.ok) return;
+    const convos = await res.json();
+    renderConversations(convos);
+  } catch(e) {}
+}
+
+function renderConversations(convos) {
+  const c = document.getElementById('convoList');
+  if (!convos.length) { c.innerHTML = '<div class="text-sm text-muted" style="padding:10px 0">No conversations yet</div>'; return; }
+  c.innerHTML = convos.map(cv => `
+    <div class="convo-item ${cv.conversation_id===currentConvoId?'active-convo':''}" onclick="loadConvo('${cv.conversation_id}','${esc(cv.title||'Conversation')}')">
+      <div class="convo-title">${esc(cv.title||'Conversation')}</div>
+      <div class="convo-meta">${cv.model?.split('/').pop()?.replace(':free','') || ''} · ${timeSince(cv.updated_at)}</div>
+      <div class="convo-actions">
+        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteConvo('${cv.conversation_id}')">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function loadConvo(convoId, title) {
+  currentConvoId = convoId;
+  const res = await fetch(`${API}/api/conversations/${convoId}`, {headers:{'X-API-Key':currentApiKey}});
+  const msgs = await res.json();
+  const container = document.getElementById('messages');
+  container.innerHTML = '';
+  for (const m of msgs) addMessage(m.content, m.role);
+  // Also restore agent context
+  fetch(`${API}/api/reset`, {method:'POST', headers:{'X-API-Key':currentApiKey}});
+  showToast(`Loaded: ${title}`, 'info');
+}
+
+async function deleteConvo(convoId) {
+  await fetch(`${API}/api/conversations/${convoId}`, {method:'DELETE', headers:{'X-API-Key':currentApiKey}});
+  if (currentConvoId === convoId) { currentConvoId = null; document.getElementById('messages').innerHTML = ''; }
+  loadConversations();
+  showToast('Conversation deleted','info');
+}
+
+function newConversation() {
+  currentConvoId = null;
+  document.getElementById('messages').innerHTML = '';
+  fetch(`${API}/api/reset`, {method:'POST', headers:{'X-API-Key':currentApiKey}});
+  document.getElementById('userInput').focus();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// SKILLS
+// ══════════════════════════════════════════════════════════════════
+async function loadSkills() {
+  try {
+    const res = await fetch(`${API}/api/skills`);
+    const skills = await res.json();
+    const c = document.getElementById('skillList');
+    if (!skills.length) { c.innerHTML = '<div class="text-sm text-muted">No skills yet. Create one!</div>'; return; }
+    c.innerHTML = skills.map(s => `
+      <div class="skill-item" onclick="useSkill('${esc(s.name)}')">
+        <div class="skill-name">${esc(s.name)}</div>
+        <div class="skill-desc">${esc(s.description||'No description')}</div>
+        <div class="skill-tags">
+          <span class="tag">${esc(s.category||'general')}</span>
+          ${s.is_public?'<span class="tag public">public</span>':''}
+          ${s.creator_name?`<span class="tag">by ${esc(s.creator_name)}</span>`:''}
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {}
+}
+
+function useSkill(name) {
+  document.getElementById('userInput').value = `<skill>${name}</skill> `;
+  document.getElementById('userInput').focus();
+  showToast(`Skill "${name}" inserted`, 'success');
+}
+
+async function saveSkill() {
+  if (!currentApiKey) { showToast('Sign in first','error'); return; }
+  const name = document.getElementById('skillName').value.trim();
+  const description = document.getElementById('skillDesc').value.trim();
+  const commands = document.getElementById('skillCmds').value.trim().split('\n').filter(Boolean);
+  const category = document.getElementById('skillCat').value;
+  const is_public = document.getElementById('skillPublic').checked ? 1 : 0;
+  if (!name) { showToast('Name required','error'); return; }
+  const res = await fetch(`${API}/api/skills`, {method:'POST', headers:{'Content-Type':'application/json','X-API-Key':currentApiKey}, body:JSON.stringify({name,description,commands,category,is_public})});
+  const data = await res.json();
+  if (res.ok) { showToast('Skill created!','success'); closeModal('skillModal'); loadSkills(); } else showToast(data.error,'error');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// INVITES
+// ══════════════════════════════════════════════════════════════════
+async function loadInvites() {
+  if (!currentApiKey) return;
+  const res = await fetch(`${API}/api/invites`, {headers:{'X-API-Key':currentApiKey}});
+  const invites = await res.json();
+  const c = document.getElementById('inviteList');
+  if (!invites.length) { c.innerHTML = '<div class="text-sm text-muted">No invite codes yet</div>'; return; }
+  c.innerHTML = invites.map(inv => {
+    const pct = inv.max_uses ? (inv.current_uses/inv.max_uses)*100 : 0;
+    const exp = new Date(inv.expires_at);
+    const active = inv.is_active && inv.current_uses < inv.max_uses && exp > new Date();
+    return `
+      <div class="invite-item">
+        <div class="flex items-center gap-2">
+          <span class="invite-code">${esc(inv.invite_code)}</span>
+          <span class="badge ${active?'badge-green':'badge-gray'}">${active?'active':'expired'}</span>
+          <button class="copy-btn ml-auto" onclick="navigator.clipboard.writeText('${esc(inv.invite_code)}');showToast('Copied!','success')">Copy</button>
+        </div>
+        <div class="invite-meta">
+          <span>${inv.current_uses}/${inv.max_uses} uses</span>
+          <span>Expires ${exp.toLocaleDateString()}</span>
+        </div>
+        <div class="invite-bar"><div class="invite-bar-fill" style="width:${pct}%"></div></div>
+      </div>`;
+  }).join('');
+}
+
+async function createInvite() {
+  const max_uses = parseInt(document.getElementById('inviteMaxUses').value)||1;
+  const expires_in_days = parseInt(document.getElementById('inviteExpiry').value)||7;
+  const res = await fetch(`${API}/api/invites`, {method:'POST', headers:{'Content-Type':'application/json','X-API-Key':currentApiKey}, body:JSON.stringify({max_uses,expires_in_days})});
+  const data = await res.json();
+  if (res.ok) { showToast('Invite created!','success'); closeModal('inviteModal'); loadInvites(); } else showToast(data.error,'error');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// FILES
+// ══════════════════════════════════════════════════════════════════
+async function loadFiles() {
+  if (!currentApiKey) return;
+  const res = await fetch(`${API}/api/files`, {headers:{'X-API-Key':currentApiKey}});
+  if (!res.ok) { document.getElementById('fileList').innerHTML = '<div class="text-sm text-muted">Could not load files</div>'; return; }
+  const files = await res.json();
+  const c = document.getElementById('fileList');
+  if (!files.length) { c.innerHTML = '<div class="text-sm text-muted">No files found</div>'; return; }
+  c.innerHTML = files.map(f => `
+    <div onclick="handleFile('${esc(f.path)}','${f.type}')" style="padding:7px 10px;border-radius:var(--r-sm);cursor:pointer;display:flex;align-items:center;gap:8px;font-size:12px;transition:.15s" onmouseover="this.style.background='var(--card)'" onmouseout="this.style.background=''">
+      <span>${f.type==='directory'?'📁':'📄'}</span>
+      <span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.name)}</span>
+    </div>
+  `).join('');
+}
+
+async function handleFile(path, type) {
+  if (type === 'directory') { showToast(`Dir: ${path}`,'info'); return; }
+  const res = await fetch(`${API}/api/files/read`, {method:'POST', headers:{'Content-Type':'application/json','X-API-Key':currentApiKey}, body:JSON.stringify({path})});
+  if (res.ok) { const d = await res.json(); addMessage(`**${path}**\n\`\`\`\n${d.content}\n\`\`\``, 'assistant'); } else showToast('Failed to read file','error');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// SIDEBAR STATS
+// ══════════════════════════════════════════════════════════════════
+async function loadSidebarStats() {
+  if (!currentApiKey) return;
+  try {
+    const res = await fetch(`${API}/api/user/stats`, {headers:{'X-API-Key':currentApiKey}});
+    if (!res.ok) return;
+    const d = await res.json();
+    const req = d.limits?.requests_used || 0;
+    const tok = d.limits?.tokens_used || 0;
+    const limReq = d.limits?.daily_requests || 100;
+    document.getElementById('ss-req').textContent = req;
+    document.getElementById('ss-tok').textContent = tok >= 1000 ? (tok/1000).toFixed(1)+'k' : tok;
+    const pct = Math.min((req/limReq)*100, 100);
+    document.getElementById('ss-bar').style.width = pct + '%';
+    document.getElementById('ss-bar').style.background = pct>80?'var(--red)':pct>60?'var(--yellow)':'linear-gradient(90deg,var(--accent),var(--accent2))';
+    document.getElementById('ss-bar-label').textContent = `${req}/${limReq} requests today`;
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════════════════════════════
+// MY STATS MODAL
+// ══════════════════════════════════════════════════════════════════
+async function loadMyStats() {
+  if (!currentApiKey) return;
+  const body = document.getElementById('statsBody');
+  body.innerHTML = '<div style="text-align:center;padding:30px;color:var(--fg3)">Loading…</div>';
+  const res = await fetch(`${API}/api/user/stats`, {headers:{'X-API-Key':currentApiKey}});
+  if (!res.ok) { body.innerHTML = '<div class="text-muted">Failed to load stats</div>'; return; }
+  const d = await res.json();
+  const lim = d.limits || {};
+  const reqPct = lim.daily_requests ? Math.min((lim.requests_used/lim.daily_requests)*100,100) : 0;
+  const tokPct = lim.daily_tokens ? Math.min((lim.tokens_used/lim.daily_tokens)*100,100) : 0;
+
+  // Mini chart
+  const maxR = Math.max(...(d.daily_usage||[]).map(x=>x.requests), 1);
+  const chartBars = (d.daily_usage||[]).slice(0,14).reverse().map(x => `<div class="mini-bar" style="height:${Math.max((x.requests/maxR)*38,2)}px" title="${x.date}: ${x.requests} reqs"></div>`).join('');
+
+  body.innerHTML = `
+    <div class="stat-banner" style="grid-template-columns:repeat(4,1fr)">
+      <div class="stat-banner-card accent"><div class="stat-banner-val">${d.total_requests||0}</div><div class="stat-banner-label">Total Requests</div></div>
+      <div class="stat-banner-card green"><div class="stat-banner-val">${d.total_conversations||0}</div><div class="stat-banner-label">Conversations</div></div>
+      <div class="stat-banner-card"><div class="stat-banner-val">${((d.total_tokens||0)/1000).toFixed(1)}k</div><div class="stat-banner-label">Total Tokens</div></div>
+      <div class="stat-banner-card"><div class="stat-banner-val">${d.user?.is_admin?'Admin':'User'}</div><div class="stat-banner-label">Role</div></div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:12px;color:var(--fg3)">TODAY'S USAGE</div>
+      <div class="flex justify-between text-sm" style="margin-bottom:6px"><span>Requests</span><span class="mono">${lim.requests_used}/${lim.daily_requests}</span></div>
+      <div class="usage-bar"><div class="usage-fill" style="width:${reqPct}%;background:${reqPct>80?'var(--red)':reqPct>60?'var(--yellow)':'var(--accent)'}"></div></div>
+      <div class="flex justify-between text-sm mt-2" style="margin-bottom:6px"><span>Tokens</span><span class="mono">${lim.tokens_used}/${lim.daily_tokens}</span></div>
+      <div class="usage-bar"><div class="usage-fill" style="width:${tokPct}%;background:${tokPct>80?'var(--red)':tokPct>60?'var(--yellow)':'var(--accent2)'}"></div></div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:12px;color:var(--fg3)">ACTIVITY (14 DAYS)</div>
+      <div class="mini-chart">${chartBars||'<span class="text-muted">No data</span>'}</div>
+    </div>
+    ${d.model_usage?.length?`
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:12px;color:var(--fg3)">FAVORITE MODELS</div>
+      ${d.model_usage.map(m=>`<div class="flex justify-between text-sm" style="padding:4px 0;border-bottom:1px solid var(--border)"><span class="mono text-xs">${m.model?.split('/').pop()?.replace(':free','')}</span><span class="badge badge-purple">${m.count}</span></div>`).join('')}
+    </div>`:''}
+  `;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PROFILE
+// ══════════════════════════════════════════════════════════════════
+async function openProfileModal() {
+  openModal('profileModal');
+  if (!currentUser) return;
+  document.getElementById('profileAvatar').textContent = currentUser.avatar_emoji || currentUser.username[0].toUpperCase();
+  document.getElementById('profileName').textContent = currentUser.username;
+  document.getElementById('profileEmail').textContent = currentUser.email || 'No email set';
+  document.getElementById('profileEmoji').value = currentUser.avatar_emoji || '';
+  document.getElementById('profileEmailInput').value = currentUser.email || '';
+  document.getElementById('profileBio').value = currentUser.bio || '';
+  document.getElementById('profileApiKey').textContent = currentApiKey || '';
+}
+
+document.getElementById('profileModal').addEventListener('transitionend', () => {});
+document.querySelector('[onclick="openModal(\'profileModal\')"]')?.addEventListener('click', openProfileModal);
+
+// Override openModal to load profile data
+const _origOpen = openModal;
+
+async function saveProfile() {
+  const data = {
+    email: document.getElementById('profileEmailInput').value.trim(),
+    bio: document.getElementById('profileBio').value.trim(),
+    avatar_emoji: document.getElementById('profileEmoji').value.trim(),
+  };
+  const res = await fetch(`${API}/api/user/me`, {method:'PUT', headers:{'Content-Type':'application/json','X-API-Key':currentApiKey}, body:JSON.stringify(data)});
+  if (res.ok) {
+    currentUser = {...currentUser, ...data};
+    saveToStorage(); applyAuth();
+    showToast('Profile saved!','success');
+  } else showToast('Save failed','error');
+}
+
+async function changePassword() {
+  const old_password = document.getElementById('oldPass').value;
+  const new_password = document.getElementById('newPass').value;
+  const res = await fetch(`${API}/api/user/change-password`, {method:'POST', headers:{'Content-Type':'application/json','X-API-Key':currentApiKey}, body:JSON.stringify({old_password,new_password})});
+  const d = await res.json();
+  if (res.ok) { showToast('Password changed!','success'); document.getElementById('oldPass').value=''; document.getElementById('newPass').value=''; } else showToast(d.error,'error');
+}
+
+async function regenKey() {
+  if (!confirm('Regenerate API key? Your current key will stop working.')) return;
+  const res = await fetch(`${API}/api/user/regenerate-key`, {method:'POST', headers:{'X-API-Key':currentApiKey}});
+  const d = await res.json();
+  if (res.ok) {
+    currentApiKey = d.api_key; saveToStorage();
+    document.getElementById('profileApiKey').textContent = currentApiKey;
+    showToast('API key regenerated!','success');
+  } else showToast(d.error,'error');
+}
+
+function copyApiKey() {
+  navigator.clipboard.writeText(currentApiKey || '');
+  showToast('API key copied!','success');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// NOTES
+// ══════════════════════════════════════════════════════════════════
+async function loadNotes() {
+  if (!currentApiKey) return;
+  const res = await fetch(`${API}/api/user/notes`, {headers:{'X-API-Key':currentApiKey}});
+  const notes = await res.json();
+  const c = document.getElementById('notesList');
+  if (!notes.length) { c.innerHTML = '<div class="text-sm text-muted">No notes yet</div>'; return; }
+  c.innerHTML = notes.map(n => `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 14px;margin-bottom:8px">
+      <div class="flex justify-between items-center" style="margin-bottom:6px">
+        <span style="font-size:13px;font-weight:600">${esc(n.title)}</span>
+        <button class="btn btn-sm btn-danger" onclick="deleteNote(${n.id})">✕</button>
+      </div>
+      <div style="font-size:13px;color:var(--fg2);white-space:pre-wrap">${esc(n.content)}</div>
+      <div class="text-xs text-muted mt-1">${timeSince(n.created_at)}</div>
+    </div>
+  `).join('');
+}
+
+function openNewNote() { document.getElementById('newNoteForm').classList.remove('hidden'); }
+function cancelNote() { document.getElementById('newNoteForm').classList.add('hidden'); document.getElementById('noteTitle').value=''; document.getElementById('noteContent').value=''; }
+async function saveNote() {
+  const title = document.getElementById('noteTitle').value.trim() || 'Note';
+  const content = document.getElementById('noteContent').value.trim();
+  if (!content) return;
+  await fetch(`${API}/api/user/notes`, {method:'POST', headers:{'Content-Type':'application/json','X-API-Key':currentApiKey}, body:JSON.stringify({title,content})});
+  cancelNote(); loadNotes(); showToast('Note saved!','success');
+}
+async function deleteNote(id) {
+  await fetch(`${API}/api/user/notes/${id}`, {method:'DELETE', headers:{'X-API-Key':currentApiKey}});
+  loadNotes();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ANNOUNCEMENTS
+// ══════════════════════════════════════════════════════════════════
+async function loadAnnouncements() {
+  try {
+    const res = await fetch(`${API}/api/announcements`);
+    const anns = await res.json();
+    const c = document.getElementById('announcements');
+    const dismissed = JSON.parse(localStorage.getItem('lk3_dismissed')||'[]');
+    c.innerHTML = anns.filter(a=>!dismissed.includes(a.id)).map(a => `
+      <div class="announcement ${a.type||'info'}" id="ann-${a.id}">
+        <span>${a.type==='warning'?'⚠':a.type==='error'?'🚨':'ℹ'}</span>
+        <span>${esc(a.content)}</span>
+        <button class="ann-dismiss" onclick="dismissAnn(${a.id})">×</button>
+      </div>
+    `).join('');
+  } catch(e){}
+}
+
+function dismissAnn(id) {
+  document.getElementById(`ann-${id}`)?.remove();
+  const d = JSON.parse(localStorage.getItem('lk3_dismissed')||'[]');
+  d.push(id); localStorage.setItem('lk3_dismissed', JSON.stringify(d));
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ADMIN
+// ══════════════════════════════════════════════════════════════════
+async function loadAdminStats() {
+  const res = await fetch(`${API}/api/admin/stats`, {headers:{'X-API-Key':currentApiKey}});
+  if (!res.ok) return;
+  const d = await res.json();
+  const maxReqs = Math.max(...(d.daily_requests||[]).map(x=>x.count),1);
+  const chart = (d.daily_requests||[]).slice(0,14).reverse().map(x=>`<div class="mini-bar" style="height:${Math.max((x.count/maxReqs)*38,2)}px" title="${x.date}: ${x.count}"></div>`).join('');
+  document.getElementById('adminStatBanner').innerHTML = `
+    <div class="stat-banner">
+      <div class="stat-banner-card accent"><div class="stat-banner-val">${d.total_users}</div><div class="stat-banner-label">Total Users</div></div>
+      <div class="stat-banner-card green"><div class="stat-banner-val">${d.active_24h}</div><div class="stat-banner-label">Active 24h</div></div>
+      <div class="stat-banner-card"><div class="stat-banner-val">${d.new_today}</div><div class="stat-banner-label">New Today</div></div>
+      <div class="stat-banner-card ${d.suspended_users>0?'red':''}"><div class="stat-banner-val">${d.suspended_users}</div><div class="stat-banner-label">Suspended</div></div>
+      <div class="stat-banner-card yellow"><div class="stat-banner-val">${d.requests_today}</div><div class="stat-banner-label">Requests Today</div></div>
+      <div class="stat-banner-card"><div class="stat-banner-val">${((d.tokens_today||0)/1000).toFixed(1)}k</div><div class="stat-banner-label">Tokens Today</div></div>
+      <div class="stat-banner-card"><div class="stat-banner-val">${d.active_keys}</div><div class="stat-banner-label">Active API Keys</div></div>
+      <div class="stat-banner-card"><div class="stat-banner-val">${d.total_conversations}</div><div class="stat-banner-label">Total Convos</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px">
+        <div class="text-xs text-muted" style="margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em">REQUESTS (14 DAYS)</div>
+        <div class="mini-chart">${chart}</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px">
+        <div class="text-xs text-muted" style="margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em">TOP MODELS (7 DAYS)</div>
+        ${(d.model_distribution||[]).map(m=>`<div class="flex justify-between text-xs" style="padding:3px 0"><span class="mono">${m.model?.split('/').pop()?.replace(':free','')}</span><span class="badge badge-purple">${m.count}</span></div>`).join('')||'<span class="text-muted text-sm">No data</span>'}
+      </div>
+    </div>
+  `;
+}
+
+async function loadAdminUsers() {
+  const search = document.getElementById('userSearch')?.value||'';
+  const res = await fetch(`${API}/api/admin/users?search=${encodeURIComponent(search)}&page=${adminPage}`, {headers:{'X-API-Key':currentApiKey}});
+  if (!res.ok) return;
+  const {users, total, pages} = await res.json();
+  document.getElementById('adminUserTable').innerHTML = `
+    <div style="overflow-x:auto">
+    <table class="data-table">
+      <thead><tr><th>ID</th><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Requests</th><th>Limit</th><th>Created</th><th>Actions</th></tr></thead>
+      <tbody>${users.map(u=>`
+        <tr>
+          <td class="mono text-xs">${u.id}</td>
+          <td>${esc(u.username)}</td>
+          <td class="text-xs text-muted">${esc(u.email||'—')}</td>
+          <td>${u.is_admin?'<span class="badge badge-yellow">Admin</span>':'<span class="badge badge-gray">User</span>'}</td>
+          <td>${u.is_suspended?'<span class="badge badge-red">Suspended</span>':'<span class="badge badge-green">Active</span>'}</td>
+          <td class="mono text-xs">${u.requests_today||0}</td>
+          <td class="mono text-xs">${u.daily_requests||100}</td>
+          <td class="text-xs text-muted">${timeSince(u.created_at)}</td>
+          <td><div class="flex gap-1">
+            <button class="btn btn-sm" onclick="adminEditUser(${u.id},'${esc(u.username)}',${u.is_admin},${u.daily_requests||100},${u.daily_tokens||50000})">Edit</button>
+            ${u.is_suspended
+              ? `<button class="btn btn-sm btn-primary" onclick="adminToggleSuspend(${u.id},false)">Unsuspend</button>`
+              : `<button class="btn btn-sm btn-danger" onclick="adminToggleSuspend(${u.id},true)">Suspend</button>`
+            }
+            <button class="btn btn-sm" onclick="adminResetLimits(${u.id})">↺ Reset</button>
+          </div></td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>
+    <div class="text-xs text-muted mt-2">${total} users total</div>
+  `;
+  const pg = document.getElementById('userPagination');
+  pg.innerHTML = pages > 1 ? `
+    <button class="btn btn-sm" onclick="adminPage=Math.max(1,adminPage-1);loadAdminUsers()" ${adminPage===1?'disabled':''}>‹</button>
+    <span>Page ${adminPage} of ${pages}</span>
+    <button class="btn btn-sm" onclick="adminPage=Math.min(${pages},adminPage+1);loadAdminUsers()" ${adminPage===pages?'disabled':''}>›</button>
+  ` : '';
+}
+
+function adminEditUser(id, username, isAdmin, reqLimit, tokLimit) {
+  const newReqLimit = prompt(`Daily request limit for ${username}:`, reqLimit);
+  if (newReqLimit === null) return;
+  const newTokLimit = prompt(`Daily token limit for ${username}:`, tokLimit);
+  if (newTokLimit === null) return;
+  fetch(`${API}/api/admin/users/${id}`, {method:'PUT', headers:{'Content-Type':'application/json','X-API-Key':currentApiKey}, body:JSON.stringify({daily_requests:parseInt(newReqLimit)||100, daily_tokens:parseInt(newTokLimit)||50000})})
+    .then(()=>{showToast('User updated','success'); loadAdminUsers();});
+}
+
+async function adminToggleSuspend(id, suspend) {
+  const reason = suspend ? (prompt('Suspension reason (optional):') || '') : '';
+  await fetch(`${API}/api/admin/users/${id}/suspend`, {method:'POST', headers:{'Content-Type':'application/json','X-API-Key':currentApiKey}, body:JSON.stringify({suspended:suspend, reason})});
+  showToast(suspend ? 'User suspended' : 'User reinstated', suspend?'error':'success');
+  loadAdminUsers();
+}
+
+async function adminResetLimits(id) {
+  await fetch(`${API}/api/admin/users/${id}/reset-limits`, {method:'POST', headers:{'X-API-Key':currentApiKey}});
+  showToast('Usage reset','success'); loadAdminUsers();
+}
+
+async function loadAdminKeys() {
+  const res = await fetch(`${API}/api/admin/keys`, {headers:{'X-API-Key':currentApiKey}});
+  const keys = await res.json();
+  document.getElementById('adminKeyTable').innerHTML = `
+    <div style="overflow-x:auto">
+    <table class="data-table">
+      <thead><tr><th>ID</th><th>Key</th><th>Label</th><th>Status</th><th>Today</th><th>Total</th><th>Errors</th><th>Last Used</th><th>Actions</th></tr></thead>
+      <tbody>${keys.map(k=>`
+        <tr>
+          <td class="mono text-xs">${k.id}</td>
+          <td class="mono text-xs">${esc(k.masked_key||'—')}</td>
+          <td>${esc(k.label||'—')}</td>
+          <td>${k.is_active?'<span class="badge badge-green">Active</span>':'<span class="badge badge-red">Disabled</span>'}</td>
+          <td class="mono text-xs">${k.requests_today||0}</td>
+          <td class="mono text-xs">${k.total_requests||0}</td>
+          <td class="mono text-xs ${k.error_count>0?'text-red':''}">${k.error_count||0}</td>
+          <td class="text-xs text-muted">${k.last_used?timeSince(k.last_used):'Never'}</td>
+          <td><div class="flex gap-1">
+            <button class="btn btn-sm" onclick="adminToggleKey(${k.id},${k.is_active?0:1})">${k.is_active?'Disable':'Enable'}</button>
+            <button class="btn btn-sm btn-danger" onclick="adminDeleteKey(${k.id})">✕</button>
+          </div></td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>
+  `;
+}
+
+async function addAdminKey() {
+  const key = document.getElementById('newKeyVal').value.trim();
+  const label = document.getElementById('newKeyLabel').value.trim();
+  if (!key) return;
+  const res = await fetch(`${API}/api/admin/keys`, {method:'POST', headers:{'Content-Type':'application/json','X-API-Key':currentApiKey}, body:JSON.stringify({key, label: label||'Manual'})});
+  const d = await res.json();
+  if (res.ok) { showToast('Key added','success'); document.getElementById('newKeyVal').value=''; loadAdminKeys(); } else showToast(d.error,'error');
+}
+
+async function adminToggleKey(id, active) {
+  await fetch(`${API}/api/admin/keys/${id}`, {method:'PUT', headers:{'Content-Type':'application/json','X-API-Key':currentApiKey}, body:JSON.stringify({is_active:active})});
+  showToast(active?'Key enabled':'Key disabled', active?'success':'info'); loadAdminKeys();
+}
+
+async function adminDeleteKey(id) {
+  if (!confirm('Delete this API key?')) return;
+  await fetch(`${API}/api/admin/keys/${id}`, {method:'DELETE', headers:{'X-API-Key':currentApiKey}});
+  showToast('Key deleted','info'); loadAdminKeys();
+}
+
+async function loadAdminLogs() {
+  const success = document.getElementById('logFilter')?.value;
+  const url = `${API}/api/admin/logs?limit=50${success?'&success='+success:''}`;
+  const res = await fetch(url, {headers:{'X-API-Key':currentApiKey}});
+  const logs = await res.json();
+  document.getElementById('adminLogTable').innerHTML = `
+    <div style="overflow-x:auto">
+    <table class="data-table">
+      <thead><tr><th>Time</th><th>User</th><th>Model</th><th>Tokens</th><th>Status</th><th>Error</th></tr></thead>
+      <tbody>${logs.map(l=>`
+        <tr>
+          <td class="text-xs mono">${new Date(l.created_at).toLocaleTimeString()}</td>
+          <td class="text-xs">${esc(l.username||l.user_id||'?')}</td>
+          <td class="text-xs mono">${l.model?.split('/').pop()?.replace(':free','')||'—'}</td>
+          <td class="text-xs mono">${l.tokens_used||0}</td>
+          <td>${l.success?'<span class="badge badge-green">OK</span>':'<span class="badge badge-red">Error</span>'}</td>
+          <td class="text-xs text-muted">${esc(l.error_message||'—')}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>
+  `;
+}
+
+async function loadAdminInvites() {
+  const res = await fetch(`${API}/api/admin/invites`, {headers:{'X-API-Key':currentApiKey}});
+  const invites = await res.json();
+  document.getElementById('adminInviteTable').innerHTML = `
+    <div style="overflow-x:auto">
+    <table class="data-table">
+      <thead><tr><th>Code</th><th>Creator</th><th>Uses</th><th>Expires</th><th>Status</th></tr></thead>
+      <tbody>${invites.map(inv=>`
+        <tr>
+          <td class="mono text-xs">${esc(inv.invite_code)}</td>
+          <td class="text-xs">${esc(inv.creator_name||'?')}</td>
+          <td class="text-xs">${inv.current_uses}/${inv.max_uses}</td>
+          <td class="text-xs text-muted">${inv.expires_at?new Date(inv.expires_at).toLocaleDateString():'Never'}</td>
+          <td>${inv.is_active && inv.current_uses<inv.max_uses?'<span class="badge badge-green">Active</span>':'<span class="badge badge-gray">Expired</span>'}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>
+  `;
+}
+
+async function loadAdminAnn() {
+  const res = await fetch(`${API}/api/admin/announcements`, {headers:{'X-API-Key':currentApiKey}});
+  const anns = await res.json();
+  document.getElementById('adminAnnList').innerHTML = anns.map(a=>`
+    <div class="flex items-center gap-2" style="padding:8px 12px;background:var(--surface);border-radius:var(--r-md);margin-bottom:6px;border:1px solid var(--border)">
+      <span class="badge ${a.type==='warning'?'badge-yellow':a.type==='error'?'badge-red':'badge-purple'}">${a.type}</span>
+      <span class="text-sm" style="flex:1">${esc(a.content)}</span>
+      <span class="text-xs text-muted">${a.is_active?'Active':'Expired'}</span>
+      <button class="btn btn-sm btn-danger" onclick="deleteAnn(${a.id})">✕</button>
+    </div>
+  `).join('') || '<div class="text-sm text-muted">No announcements</div>';
+}
+
+async function postAnnouncement() {
+  const content = document.getElementById('annContent').value.trim();
+  const type = document.getElementById('annType').value;
+  const expires_in_days = parseInt(document.getElementById('annExpiry').value)||7;
+  if (!content) return;
+  await fetch(`${API}/api/admin/announcements`, {method:'POST', headers:{'Content-Type':'application/json','X-API-Key':currentApiKey}, body:JSON.stringify({content,type,expires_in_days})});
+  document.getElementById('annContent').value='';
+  showToast('Announcement posted','success'); loadAdminAnn(); loadAnnouncements();
+}
+
+async function deleteAnn(id) {
+  await fetch(`${API}/api/admin/announcements/${id}`, {method:'DELETE', headers:{'X-API-Key':currentApiKey}});
+  showToast('Removed','info'); loadAdminAnn(); loadAnnouncements();
+}
+
+async function broadcastClear() {
+  if (!confirm('Clear all active user sessions?')) return;
+  const res = await fetch(`${API}/api/admin/broadcast`, {method:'POST', headers:{'X-API-Key':currentApiKey}});
+  const d = await res.json(); showToast(d.message,'success');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// UI HELPERS
+// ══════════════════════════════════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  if (id==='profileModal') {
+    document.getElementById('profileAvatar').textContent = currentUser?.avatar_emoji || currentUser?.username?.[0]?.toUpperCase() || '?';
+    document.getElementById('profileName').textContent = currentUser?.username || '—';
+    document.getElementById('profileEmail').textContent = currentUser?.email || 'No email set';
+    document.getElementById('profileEmoji').value = currentUser?.avatar_emoji || '';
+    document.getElementById('profileEmailInput').value = currentUser?.email || '';
+    document.getElementById('profileBio').value = currentUser?.bio || '';
+    document.getElementById('profileApiKey').textContent = currentApiKey || '';
+  }
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.overlay').forEach(o => o.addEventListener('click', e => { if(e.target===o) o.classList.remove('open'); }));
+
+function toggleUserMenu() { document.getElementById('userMenu').classList.toggle('open'); }
+function closeDropdowns() { document.querySelectorAll('.dropdown-menu').forEach(m=>m.classList.remove('open')); }
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+
+function switchStab(name) {
+  document.querySelectorAll('.stab').forEach(t=>t.classList.toggle('active', t.dataset.stab===name));
+  document.querySelectorAll('.stab-panel').forEach(p=>p.classList.toggle('active', p.id===`stab-${name}`));
+  if (name==='skills') loadSkills();
+  if (name==='invites') loadInvites();
+  if (name==='files') loadFiles();
+}
+
+function switchAtab(name) {
+  document.querySelectorAll('.atab').forEach(t=>t.classList.toggle('active', t.dataset.atab===name));
+  document.querySelectorAll('.atab-panel').forEach(p=>p.classList.toggle('active', p.id===`atab-${name}`));
+}
+
+function showToast(msg, type='info') {
+  const c = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${type==='success'?'✓':type==='error'?'✕':'ℹ'}</span> ${esc(msg)}`;
+  c.appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transform='translateX(20px)';setTimeout(()=>el.remove(),300)}, 3000);
+}
+
+async function downloadZip(data) {
+  const res = await fetch(`${API}/api/download`, {method:'POST', headers:{'Content-Type':'application/json','X-API-Key':currentApiKey}, body:JSON.stringify(data)});
+  if (res.ok) { const blob = await res.blob(); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download=data.filename||'files.zip'; a.click(); URL.revokeObjectURL(url); }
+}
+
+function renderMarkdown(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/```(\w*)\n?([\s\S]*?)```/g, (_,lang,code)=>`<pre><code class="lang-${lang}">${code}</code></pre>`)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^### (.+)/gm, '<h3 style="font-size:14px;margin:8px 0 4px">$1</h3>')
+    .replace(/^## (.+)/gm, '<h2 style="font-size:15px;margin:10px 0 5px">$1</h2>')
+    .replace(/^# (.+)/gm, '<h1 style="font-size:16px;margin:12px 0 6px">$1</h1>')
+    .replace(/^- (.+)/gm, '<li style="margin-left:16px;margin-bottom:2px">$1</li>')
+    .replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+}
+
+function esc(s) { if (!s) return ''; const d=document.createElement('div'); d.textContent=String(s); return d.innerHTML; }
+function timeSince(ts) {
+  if (!ts) return '—';
+  const d = ts.includes('T') || ts.includes(' ') ? new Date(ts) : new Date(ts*1000);
+  const diff = (Date.now()-d)/1000;
+  if (diff<60) return 'just now';
+  if (diff<3600) return Math.floor(diff/60)+'m ago';
+  if (diff<86400) return Math.floor(diff/3600)+'h ago';
+  return Math.floor(diff/86400)+'d ago';
+}
+
+let debounceTimers = {};
+function debounce(fn, delay) {
+  return (...args) => {
+    clearTimeout(debounceTimers[fn.name]);
+    debounceTimers[fn.name] = setTimeout(()=>fn(...args), delay);
+  };
+}
+</script>
+</body>
+</html>

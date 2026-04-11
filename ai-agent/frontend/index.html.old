@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Agent - Web Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: #16213e;
+            padding: 15px 20px;
+            border-bottom: 1px solid #0f3460;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            color: #e94560;
+        }
+
+        .settings {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .settings input, .settings select {
+            padding: 8px 12px;
+            border: 1px solid #0f3460;
+            border-radius: 5px;
+            background: #1a1a2e;
+            color: #eee;
+            font-size: 14px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: #0f3460;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 70%;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 10px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: #e94560;
+            color: white;
+        }
+
+        .message.assistant {
+            align-self: flex-start;
+            background: #16213e;
+            border-left: 3px solid #e94560;
+        }
+
+        .message.system {
+            align-self: center;
+            background: #0f3460;
+            font-size: 0.9em;
+            color: #aaa;
+        }
+
+        .input-area {
+            padding: 20px;
+            background: #16213e;
+            border-top: 1px solid #0f3460;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .input-area textarea {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px;
+            border: 1px solid #0f3460;
+            border-radius: 8px;
+            background: #1a1a2e;
+            color: #eee;
+            font-size: 14px;
+            resize: none;
+            min-height: 60px;
+        }
+
+        .input-area button {
+            padding: 12px 24px;
+            background: #e94560;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        .input-area button:hover {
+            background: #ff6b6b;
+        }
+
+        .input-area button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+
+        .sidebar {
+            width: 30%;
+            background: #16213e;
+            border-left: 1px solid #0f3460;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-tabs {
+            display: flex;
+            border-bottom: 1px solid #0f3460;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            background: #16213e;
+            border: none;
+            color: #aaa;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            background: #0f3460;
+            color: #e94560;
+        }
+
+        .tab:hover {
+            background: #0f3460;
+        }
+
+        .tab-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .file-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .file-item:hover {
+            background: #0f3460;
+        }
+
+        .file-item.directory {
+            color: #ffd700;
+        }
+
+        .file-item.file {
+            color: #aaa;
+        }
+
+        .skill-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: #0f3460;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .skill-item:hover {
+            background: #1a3a5c;
+        }
+
+        .skill-name {
+            font-weight: bold;
+            color: #e94560;
+        }
+
+        .skill-description {
+            font-size: 0.85em;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
+        .invite-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: #0f3460;
+            border-radius: 5px;
+            word-break: break-all;
+        }
+
+        .invite-code {
+            font-family: monospace;
+            background: #1a1a2e;
+            padding: 5px;
+            border-radius: 3px;
+            color: #e94560;
+        }
+
+        .terminal {
+            height: 200px;
+            background: #0d0d0d;
+            border-top: 1px solid #0f3460;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-y: auto;
+        }
+
+        .terminal-line {
+            margin: 2px 0;
+            color: #0f0;
+        }
+
+        .terminal-error {
+            color: #f44;
+        }
+
+        .options {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-left: 10px;
+        }
+
+        .options label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .typing-indicator {
+            display: inline-block;
+        }
+
+        .typing-indicator span {
+            animation: blink 1.4s infinite;
+            opacity: 0;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes blink {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1a2e;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #0f3460;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #e94560;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #16213e;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #aaa;
+        }
+
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #0f3460;
+            border-radius: 5px;
+            background: #1a1a2e;
+            color: #eee;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: #e94560;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-primary:hover {
+            background: #ff6b6b;
+        }
+
+        .btn-secondary {
+            background: #0f3460;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .btn-secondary:hover {
+            background: #1a3a5c;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .stat-card {
+            background: #0f3460;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #e94560;
+        }
+
+        .stat-label {
+            font-size: 0.85em;
+            color: #aaa;
+        }
+
+        .download-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .download-btn:hover {
+            background: #34ce57;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 AI Agent</h1>
+        <div class="settings">
+            <select id="modelSelect"></select>
+            <div class="options">
+                <label>
+                    <input type="checkbox" id="reasoningToggle" />
+                    Reasoning
+                </label>
+            </div>
+            <button onclick="showLoginModal()" id="loginBtn" class="btn-secondary">Login</button>
+            <div id="userInfo" class="user-info" style="display:none;">
+                <span id="usernameDisplay"></span>
+                <button onclick="logout()" class="btn-secondary" style="padding: 5px 10px; font-size: 12px;">Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="chat-container">
+            <div class="messages" id="messages"></div>
+            <div class="input-area">
+                <textarea 
+                    id="messageInput" 
+                    placeholder="Type your message... (Press Ctrl+Enter to send)"
+                    onkeydown="if(event.ctrlKey && event.key === 'Enter') sendMessage()"
+                ></textarea>
+                <button onclick="sendMessage()" id="sendBtn">Send</button>
+                <button onclick="resetChat()" class="btn-secondary">Reset</button>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="sidebar-tabs">
+                <button class="tab active" onclick="switchTab('files')">📁 Files</button>
+                <button class="tab" onclick="switchTab('skills')">⚡ Skills</button>
+                <button class="tab" onclick="switchTab('invites')">📨 Invites</button>
+                <button class="tab" onclick="switchTab('stats')">📊 Stats</button>
+            </div>
+            
+            <div id="filesTab" class="tab-content active">
+                <div class="sidebar-header" style="padding: 10px; font-weight: bold;">File Explorer</div>
+                <div class="file-explorer" id="fileExplorer"></div>
+            </div>
+            
+            <div id="skillsTab" class="tab-content">
+                <div style="padding: 10px; display: flex; gap: 5px;">
+                    <button onclick="showCreateSkillModal()" class="btn-primary" style="flex: 1;">+ New Skill</button>
+                </div>
+                <div id="skillsList"></div>
+            </div>
+            
+            <div id="invitesTab" class="tab-content">
+                <div style="padding: 10px; display: flex; gap: 5px;">
+                    <button onclick="showCreateInviteModal()" class="btn-primary" style="flex: 1;">+ Create Invite</button>
+                </div>
+                <div id="invitesList"></div>
+            </div>
+            
+            <div id="statsTab" class="tab-content">
+                <div id="userStats"></div>
+            </div>
+            
+            <div class="terminal" id="terminal">
+                <div class="terminal-line">Terminal ready...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login/Register Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Login / Register</h2>
+                <button class="modal-close" onclick="closeModal('loginModal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>API Key (if you have one)</label>
+                <input type="text" id="loginApiKey" placeholder="Enter your API key" />
+            </div>
+            <div class="form-group">
+                <label>Or register with invite code</label>
+                <input type="text" id="registerInviteCode" placeholder="Invite code (optional)" />
+            </div>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="registerUsername" placeholder="Choose a username" />
+            </div>
+            <button onclick="loginWithKey()" class="btn-primary" style="width: 100%; margin-bottom: 10px;">Login with API Key</button>
+            <button onclick="registerUser()" class="btn-secondary" style="width: 100%;">Register New Account</button>
+        </div>
+    </div>
+
+    <!-- Create Skill Modal -->
+    <div id="createSkillModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create New Skill</h2>
+                <button class="modal-close" onclick="closeModal('createSkillModal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>Skill Name</label>
+                <input type="text" id="skillName" placeholder="e.g., python-expert" />
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="skillDescription" placeholder="What does this skill do?" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Category</label>
+                <select id="skillCategory">
+                    <option value="general">General</option>
+                    <option value="coding">Coding</option>
+                    <option value="devops">DevOps</option>
+                    <option value="data">Data Science</option>
+                    <option value="web">Web Development</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Commands (JSON array)</label>
+                <textarea id="skillCommands" placeholder='[{"tool": "run_command", "params": {"command": "python --version"}}]' rows="5"></textarea>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="skillPublic" /> Make public
+                </label>
+            </div>
+            <button onclick="createSkill()" class="btn-primary" style="width: 100%;">Create Skill</button>
+        </div>
+    </div>
+
+    <!-- Create Invite Modal -->
+    <div id="createInviteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create Invitation</h2>
+                <button class="modal-close" onclick="closeModal('createInviteModal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>Max Uses</label>
+                <input type="number" id="inviteMaxUses" value="1" min="1" max="100" />
+            </div>
+            <div class="form-group">
+                <label>Expires In (days)</label>
+                <input type="number" id="inviteExpiresDays" value="7" min="1" max="365" />
+            </div>
+            <button onclick="createInvite()" class="btn-primary" style="width: 100%;">Generate Invite Code</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let apiKey = localStorage.getItem('openrouter_api_key') || '';
+        let selectedModel = localStorage.getItem('selected_model') || 'qwen/qwen-coder-plus:free';
+        let currentUser = null;
+        let currentDownloadData = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            if (apiKey) {
+                loadUserInfo();
+            }
+            loadModels();
+            refreshFiles();
+        });
+
+        document.getElementById('modelSelect').addEventListener('change', (e) => {
+            selectedModel = e.target.value;
+            localStorage.setItem('selected_model', selectedModel);
+        });
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            if (tabName === 'skills') loadSkills();
+            if (tabName === 'invites') loadInvites();
+            if (tabName === 'stats') loadStats();
+        }
+
+        async function loadModels() {
+            try {
+                const response = await fetch(`${API_BASE}/api/models`);
+                const models = await response.json();
+                
+                const select = document.getElementById('modelSelect');
+                select.innerHTML = '';
+                
+                models.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model.id;
+                    option.textContent = model.name;
+                    if (model.id === selectedModel) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading models:', error);
+            }
+        }
+
+        function showLoginModal() {
+            document.getElementById('loginModal').classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function showCreateSkillModal() {
+            if (!apiKey) {
+                alert('Please login first');
+                showLoginModal();
+                return;
+            }
+            document.getElementById('createSkillModal').classList.add('active');
+        }
+
+        function showCreateInviteModal() {
+            if (!apiKey) {
+                alert('Please login first');
+                showLoginModal();
+                return;
+            }
+            document.getElementById('createInviteModal').classList.add('active');
+        }
+
+        async function loginWithKey() {
+            const key = document.getElementById('loginApiKey').value.trim();
+            if (!key) {
+                alert('Please enter an API key');
+                return;
+            }
+            
+            apiKey = key;
+            localStorage.setItem('openrouter_api_key', apiKey);
+            closeModal('loginModal');
+            await loadUserInfo();
+        }
+
+        async function registerUser() {
+            const username = document.getElementById('registerUsername').value.trim();
+            const inviteCode = document.getElementById('registerInviteCode').value.trim();
+            
+            if (!username) {
+                alert('Please enter a username');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/register`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        username: username,
+                        invite_code: inviteCode || null
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    apiKey = data.api_key;
+                    localStorage.setItem('openrouter_api_key', apiKey);
+                    closeModal('loginModal');
+                    alert('Registration successful! Your API key has been saved.');
+                    await loadUserInfo();
+                } else {
+                    alert('Registration failed: ' + data.error);
+                }
+            } catch (error) {
+                alert('Registration error: ' + error.message);
+            }
+        }
+
+        async function loadUserInfo() {
+            try {
+                const response = await fetch(`${API_BASE}/api/user/me`, {
+                    headers: {'X-API-Key': apiKey}
+                });
+                
+                if (response.ok) {
+                    currentUser = await response.json();
+                    document.getElementById('userInfo').style.display = 'flex';
+                    document.getElementById('usernameDisplay').textContent = currentUser.username;
+                    document.getElementById('loginBtn').style.display = 'none';
+                } else {
+                    logout();
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+            }
+        }
+
+        function logout() {
+            apiKey = '';
+            currentUser = null;
+            localStorage.removeItem('openrouter_api_key');
+            document.getElementById('userInfo').style.display = 'none';
+            document.getElementById('loginBtn').style.display = 'block';
+            addSystemMessage('Logged out');
+        }
+
+        async function loadSkills() {
+            if (!apiKey) {
+                document.getElementById('skillsList').innerHTML = '<div style="padding: 10px; color: #aaa;">Please login to view skills</div>';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/skills`);
+                const skills = await response.json();
+                
+                const container = document.getElementById('skillsList');
+                container.innerHTML = '';
+                
+                skills.forEach(skill => {
+                    const item = document.createElement('div');
+                    item.className = 'skill-item';
+                    item.innerHTML = `
+                        <div class="skill-name">${skill.name}</div>
+                        <div class="skill-description">${skill.description || 'No description'}</div>
+                        <div style="font-size: 0.8em; color: #666; margin-top: 5px;">Category: ${skill.category} | Uses: ${skill.usage_count}</div>
+                    `;
+                    item.onclick = () => useSkill(skill.name);
+                    container.appendChild(item);
+                });
+            } catch (error) {
+                console.error('Error loading skills:', error);
+            }
+        }
+
+        async function createSkill() {
+            const name = document.getElementById('skillName').value.trim();
+            const description = document.getElementById('skillDescription').value.trim();
+            const category = document.getElementById('skillCategory').value;
+            const isPublic = document.getElementById('skillPublic').checked;
+            let commands;
+            
+            try {
+                commands = JSON.parse(document.getElementById('skillCommands').value);
+            } catch (e) {
+                alert('Invalid JSON for commands');
+                return;
+            }
+            
+            if (!name) {
+                alert('Skill name is required');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/skills`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': apiKey
+                    },
+                    body: JSON.stringify({
+                        name,
+                        description,
+                        commands,
+                        category,
+                        is_public: isPublic ? 1 : 0
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('Skill created successfully!');
+                    closeModal('createSkillModal');
+                    loadSkills();
+                    // Clear form
+                    document.getElementById('skillName').value = '';
+                    document.getElementById('skillDescription').value = '';
+                    document.getElementById('skillCommands').value = '';
+                    document.getElementById('skillPublic').checked = false;
+                } else {
+                    alert('Failed to create skill: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error creating skill: ' + error.message);
+            }
+        }
+
+        function useSkill(skillName) {
+            const input = document.getElementById('messageInput');
+            input.value = `<skill>${skillName}</skill> ` + input.value;
+            input.focus();
+        }
+
+        async function loadInvites() {
+            if (!apiKey) {
+                document.getElementById('invitesList').innerHTML = '<div style="padding: 10px; color: #aaa;">Please login to view invites</div>';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/invites`, {
+                    headers: {'X-API-Key': apiKey}
+                });
+                
+                const invites = await response.json();
+                
+                const container = document.getElementById('invitesList');
+                container.innerHTML = '';
+                
+                invites.forEach(invite => {
+                    const item = document.createElement('div');
+                    item.className = 'invite-item';
+                    item.innerHTML = `
+                        <div class="invite-code">${invite.invite_code}</div>
+                        <div style="font-size: 0.8em; color: #aaa; margin-top: 5px;">
+                            Uses: ${invite.current_uses}/${invite.max_uses} | 
+                            Expires: ${new Date(invite.expires_at).toLocaleDateString()}
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+                
+                if (invites.length === 0) {
+                    container.innerHTML = '<div style="padding: 10px; color: #aaa;">No invites yet</div>';
+                }
+            } catch (error) {
+                console.error('Error loading invites:', error);
+            }
+        }
+
+        async function createInvite() {
+            const maxUses = parseInt(document.getElementById('inviteMaxUses').value);
+            const expiresDays = parseInt(document.getElementById('inviteExpiresDays').value);
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/invites`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': apiKey
+                    },
+                    body: JSON.stringify({
+                        max_uses: maxUses,
+                        expires_in_days: expiresDays
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert(`Invite code created: ${data.invite_code}\n\nShare this code with others!`);
+                    closeModal('createInviteModal');
+                    loadInvites();
+                } else {
+                    alert('Failed to create invite: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error creating invite: ' + error.message);
+            }
+        }
+
+        async function loadStats() {
+            if (!apiKey) {
+                document.getElementById('userStats').innerHTML = '<div style="padding: 10px; color: #aaa;">Please login to view stats</div>';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/user/me`, {
+                    headers: {'X-API-Key': apiKey}
+                });
+                
+                const user = await response.json();
+                const stats = user.stats || {};
+                
+                document.getElementById('userStats').innerHTML = `
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.requests_today || 0}</div>
+                            <div class="stat-label">Requests Today</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.tokens_today || 0}</div>
+                            <div class="stat-label">Tokens Today</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.daily_request_limit || '∞'}</div>
+                            <div class="stat-label">Daily Request Limit</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.daily_token_limit || '∞'}</div>
+                            <div class="stat-label">Daily Token Limit</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.total_requests || 0}</div>
+                            <div class="stat-label">Total Requests</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.successful_requests || 0}</div>
+                            <div class="stat-label">Successful</div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        function addMessage(content, role) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            
+            if (role === 'assistant' && content.includes('<tool>')) {
+                // Parse and format tool calls
+                const formatted = content.replace(
+                    /<tool>(\w+)(\{.*?\})<\/tool>/g, 
+                    '🔧 Executing: $1$2'
+                );
+                messageDiv.textContent = formatted;
+            } else {
+                messageDiv.textContent = content;
+            }
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            return messageDiv;
+        }
+
+        function addSystemMessage(content) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message system';
+            messageDiv.textContent = content;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function logToTerminal(content, isError = false) {
+            const terminal = document.getElementById('terminal');
+            const line = document.createElement('div');
+            line.className = isError ? 'terminal-error' : 'terminal-line';
+            line.textContent = `> ${content}`;
+            terminal.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            if (!apiKey) {
+                alert('Please login first');
+                showLoginModal();
+                return;
+            }
+
+            input.value = '';
+            sendBtn.disabled = true;
+            
+            addMessage(message, 'user');
+            
+            const useReasoning = document.getElementById('reasoningToggle').checked;
+            const assistantMsg = addMessage('', 'assistant');
+            let fullContent = '';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': apiKey
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        stream: true,
+                        use_reasoning: useReasoning,
+                        model: selectedModel
+                    })
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                
+                                if (data.type === 'content') {
+                                    fullContent += data.content;
+                                    assistantMsg.textContent = fullContent;
+                                } else if (data.type === 'tool_result') {
+                                    const result = data.result;
+                                    if (result.success) {
+                                        logToTerminal(`✓ ${result.message || 'Command executed'}`);
+                                        if (result.files) {
+                                            refreshFiles();
+                                        }
+                                    } else {
+                                        logToTerminal(`✗ ${result.error}`, true);
+                                    }
+                                } else if (data.type === 'download_ready') {
+                                    currentDownloadData = data.data;
+                                    const downloadBtn = document.createElement('button');
+                                    downloadBtn.className = 'download-btn';
+                                    downloadBtn.textContent = `📥 Download ${currentDownloadData.file_count} files`;
+                                    downloadBtn.onclick = downloadFiles;
+                                    assistantMsg.appendChild(downloadBtn);
+                                } else if (data.type === 'error') {
+                                    logToTerminal(data.error, true);
+                                    assistantMsg.textContent += `\n\nError: ${data.error}`;
+                                } else if (data.type === 'done') {
+                                    refreshFiles();
+                                }
+                            } catch (e) {
+                                console.error('Parse error:', e);
+                            }
+                        }
+                    }
+                    
+                    assistantMsg.scrollTop = assistantMsg.scrollHeight;
+                }
+
+            } catch (error) {
+                assistantMsg.textContent = `Error: ${error.message}`;
+                logToTerminal(error.message, true);
+            } finally {
+                sendBtn.disabled = false;
+                refreshFiles();
+            }
+        }
+
+        async function downloadFiles() {
+            if (!currentDownloadData) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/download`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': apiKey
+                    },
+                    body: JSON.stringify({
+                        zip_data: currentDownloadData.zip_data,
+                        filename: currentDownloadData.filename
+                    })
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = currentDownloadData.filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }
+            } catch (error) {
+                alert('Download failed: ' + error.message);
+            }
+        }
+
+        async function refreshFiles() {
+            try {
+                const response = await fetch(`${API_BASE}/api/execute`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        command: 'list_files',
+                        params: { path: '.' }
+                    })
+                });
+
+                const data = await response.json();
+                const explorer = document.getElementById('fileExplorer');
+                explorer.innerHTML = '';
+
+                if (data.success && data.files) {
+                    data.files.forEach(file => {
+                        const item = document.createElement('div');
+                        item.className = `file-item ${file.type}`;
+                        item.innerHTML = `
+                            <span>${file.type === 'directory' ? '📁' : '📄'}</span>
+                            <span>${file.name}</span>
+                        `;
+                        explorer.appendChild(item);
+                    });
+                }
+            } catch (error) {
+                console.error('Error refreshing files:', error);
+            }
+        }
+
+        async function resetChat() {
+            try {
+                await fetch(`${API_BASE}/api/reset`, { 
+                    method: 'POST',
+                    headers: {'X-API-Key': apiKey}
+                });
+                document.getElementById('messages').innerHTML = '';
+                addSystemMessage('Chat history cleared');
+            } catch (error) {
+                console.error('Error resetting chat:', error);
+            }
+        }
+    </script>
+</body>
+</html>
